@@ -210,27 +210,40 @@ begin
   raise notice 'Updated schemamap UDF definition for %', $1;
 end; $$ language plpgsql volatile;
 
--- This section contains UDFs that are meant to be redefined by either the DBAs or by Schemamap Pro backend
+create or replace function schemamap.update_function_definition
+(function_name text, new_body text)
+returns void as $$
+declare
+  v_function_oid oid;
+  v_function_args text;
+  v_function_returns text;
+  v_function_lang text;
+  v_function_volatile text;
+  volatile_verbose text;
+begin
+  select pp.oid,
+         pg_catalog.pg_get_function_arguments(pp.oid),
+         pg_catalog.pg_get_function_result(pp.oid),
+         pl.lanname,
+         pp.provolatile
+  into v_function_oid, v_function_args, v_function_returns, v_function_lang, v_function_volatile
+  from pg_proc pp
+  join pg_namespace pn on pn.oid = pp.pronamespace
+  join pg_language pl on pl.oid = pp.prolang
+  where pn.nspname = 'schemamap' and pp.proname = $1;
 
--- Reasonable defaults, return type should be changed once supporting other types
--- Types:
--- - 1DB_WITH_TENANTS_TABLE_ID_FK
--- - 1DB_WITH_TENANTS_TABLE_NAME_FK
--- - 1DB_WITH_1SCHEMA_PER_TENANT
--- - DB_PER_TENANT
-create or replace function schemamap.tenant_isolation()
-returns table (type text, tenants_table_name text) as $$
-  select '1DB_WITH_TENANTS_TABLE_ID_FK', 'public.tenants';
-$$ language sql immutable;
+  volatile_verbose := case
+    when v_function_volatile = 's' then 'stable'
+    when v_function_volatile = 'i' then 'immutable' end;
 
-create or replace function schemamap.list_tenants()
-returns table (tenant_id text, tenant_short_name text, tenant_display_name text) as $$
-  select
-    null as tenant_id,
-    null as tenant_short_name,
-    null as tenant_display_name
-  where 'TODO' is not null;
-$$ language sql stable;
+  if v_function_volatile = 'v' then
+    raise exception 'function %.% is volatile. update not allowed.', 'schemamap', $2;
+  end if;
+
+  execute format('create or replace function schemamap.%I(%s) returns %s as $fn$ %s $fn$ language %s %s',
+  $1, v_function_args, v_function_returns, new_body, v_function_lang, volatile_verbose);
+  raise notice 'Updated schemamap UDF definition for %', $1;
+end; $$ language plpgsql volatile;
 
 create or replace function schemamap.verify_installation()
 returns table(tenants_defined boolean,
@@ -241,3 +254,11 @@ returns table(tenants_defined boolean,
     false as mdes_defined,
     false as external_sources_defined
 $$ language sql stable;
+
+create or replace function schemamap.define_master_data_entity
+(mde_name text, new_body text)
+returns void as $$
+begin
+  execute format('create or replace view schemamap.mde_%I as %s', $1, $2);
+  raise notice '(Re-)defined schemamap MDE definition for %', $1;
+end; $$ language plpgsql volatile;
