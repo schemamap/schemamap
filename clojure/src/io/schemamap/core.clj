@@ -1,6 +1,7 @@
 (ns io.schemamap.core
   (:gen-class)
   (:require [clojure.tools.logging :as log]
+            [next.jdbc :as jdbc]
             [clj-ssh.ssh :as ssh])
   (:import
    (org.flywaydb.core Flyway)
@@ -36,16 +37,27 @@
 
 (defn init!
   [{:keys [^DataSource datasource
+
+           application-db-roles
+
            port-forward-host
            port-forward-remote-port
            port-forward-port
            port-forward-user
            port-forward-postgres?]
-    :or   {port-forward-postgres? false
+    :or   {application-db-roles   #{} ;; TODO: make mandatory with nice error message
+           port-forward-postgres? false
            port-forward-host      "pgtunnel.eu.schemamap.io"}}]
   (log/info "Migrating schemamap schema")
   (run-migrations! datasource)
   (log/info "Migrated schemamap schema")
+
+  (log/info "Granting schemamap schema usage permissions to roles:" application-db-roles)
+  (with-open [conn (jdbc/get-connection datasource)]
+    (doseq [role application-db-roles]
+      ;; TODO: sanitize
+      (jdbc/execute! conn [(format "grant usage on schema schemamap to %s" role)])))
+
   (let [session (if (and port-forward-remote-port port-forward-postgres?)
                   (do
                     (log/info "Starting Postgres SSH port forwarding to" port-forward-host)
