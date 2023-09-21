@@ -86,6 +86,11 @@
   };
 
   pre-commit.hooks = {
+    editorconfig-checker = {
+      enable = true;
+      # NOTE: .clj files have dynamic indentation, disable check
+      entry = lib.mkForce "${pkgs.editorconfig-checker}/bin/editorconfig-checker --disable-indent-size";
+    };
     nixpkgs-fmt.enable = true;
     shellcheck.enable = true;
   };

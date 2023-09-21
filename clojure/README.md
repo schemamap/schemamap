@@ -5,8 +5,7 @@
 Add to your deps.edn file:
 
 ``` clojure
-io.github.schemamap/schemamap {:git/sha   "$LATEST_COMMIT"
-                               :deps/root "clojure"}
+io.github.schemamap/schemamap {:git/sha "$LATEST_COMMIT" :deps/root "clojure"}
 ```
 
 ## Usage
