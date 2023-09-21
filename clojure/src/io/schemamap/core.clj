@@ -56,7 +56,8 @@
   (with-open [conn (jdbc/get-connection datasource)]
     (doseq [role application-db-roles]
       ;; TODO: sanitize
-      (jdbc/execute! conn [(format "grant usage on schema schemamap to %s" role)])))
+      (jdbc/execute! conn [(format "grant usage on schema schemamap to %s" role)])
+      (jdbc/execute! conn [(format "grant execute on all functions in schema schemamap to %s" role)])))
 
   (let [session (if (and port-forward-remote-port port-forward-postgres?)
                   (do
@@ -73,6 +74,7 @@
                   (log/debug "Skipping Postgres SSH port forwarding"))]
     {:session session}))
 
+;; TODO: implement java.io.Closeable to allow `with-open` macro usage
 (defn close! [{:keys [session]}]
   (when session
     (.disconnect session)))

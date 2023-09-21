@@ -35,6 +35,18 @@
       create user schemamap_test with password 'schemamap_test';
       grant all privileges on database schemamap_test to postgres;
       alter database schemamap_test owner to schemamap_test;
+
+      create role schemamap with
+        login
+        nosuperuser
+        nocreatedb
+        nocreaterole
+        noinherit
+        noreplication
+        connection limit 5
+        encrypted password 'schemamap';
+
+      grant connect, create on database schemamap_test to schemamap;
     '';
 
     listen_addresses = "127.0.0.1,localhost";
@@ -56,6 +68,12 @@
       jit = "0";
       synchronous_commit = "off";
     };
+  };
+
+  scripts = {
+    psql-local.exec = "psql -h 127.0.0.1 -U schemamap_test schemamap_test $@";
+    psql-local-smio.exec = "psql -h 127.0.0.1 -U schemamap schemamap_test $@";
+    pgclear.exec = "git clean -xf $PGDATA";
   };
 
   pre-commit.hooks = {

@@ -210,6 +210,9 @@ begin
   raise notice 'Updated schemamap UDF definition for %', $1;
 end; $$ language plpgsql volatile security definer;
 
+-- https://www.postgresql.org/docs/current/sql-createfunction.html#SQL-CREATEFUNCTION-SECURITY
+revoke all on function schemamap.update_function_definition(text, text) from public;
+
 create or replace function schemamap.verify_installation()
 returns table(tenants_defined boolean,
               mdes_defined boolean,
@@ -228,9 +231,148 @@ begin
   raise notice '(Re-)defined schemamap MDE definition for %', $1;
 end; $$ language plpgsql volatile security definer;
 
+
+-- https://www.postgresql.org/docs/current/sql-createfunction.html#SQL-CREATEFUNCTION-SECURITY
+revoke all on function schemamap.define_master_data_entity(text, text) from public;
+
 create or replace function schemamap.list_mdes()
 returns table(mde_name text) as $$
   select substring(table_name from 5) as mde_name
   from information_schema.views
   where table_schema = 'schemamap' and table_name like 'mde\_%' escape '\';
+$$ language sql stable;
+
+create or replace function schemamap.dependent_views(p_schema_name text, p_view_name text)
+returns table (
+  view text,
+  level int
+) as $$
+with recursive views as (
+-- get the directly depending views
+select distinct
+  v.oid::regclass as view,
+  1 as level
+from pg_depend as d
+join pg_rewrite as r on r.oid = d.objid
+join pg_class as v on v.oid = r.ev_class and v.relkind = 'v' and v.oid != d.refobjid
+where
+  d.classid = 'pg_rewrite'::regclass and
+  d.refclassid = 'pg_class'::regclass and
+  d.deptype = 'n' and
+  d.refobjid = (quote_ident(p_schema_name) || '.' || quote_ident(p_view_name))::regclass
+
+union all
+
+select distinct
+  v.oid::regclass,
+  views.level + 1
+from views
+join pg_depend as d on d.refobjid = views.view
+join pg_rewrite as r on r.oid = d.objid
+join pg_class as v on v.oid = r.ev_class and v.relkind = 'v' and v.oid != views.view -- avoid loop
+where
+  d.classid = 'pg_rewrite'::regclass and
+  d.refclassid = 'pg_class'::regclass and
+  d.deptype = 'n')
+select view, level from views;
+$$ language sql stable;
+
+create or replace function schemamap.view_dependencies(p_schema_name text, p_view_name text)
+returns table (
+  object_type text,
+  schema_name text,
+  object_name text,
+  level int
+) as $$
+with recursive dependencies as (
+    -- get the objects directly depended on by the view
+    select
+        case when c.relkind = 'v' then 'view'
+             when c.relkind = 'r' then 'table'
+             else c.relkind::text
+        end as object_type,
+        n.nspname as schema_name,
+        c.oid::regclass::text as object_name,
+        1 as level
+    from pg_depend as d
+    join pg_class as c on c.oid = d.refobjid
+    join pg_rewrite as r on r.oid = d.objid
+    join pg_namespace as n on n.oid = c.relnamespace
+    where d.classid = 'pg_rewrite'::regclass
+    and d.refclassid = 'pg_class'::regclass
+    and d.deptype = 'n'
+    and r.ev_class = (quote_ident(p_schema_name) || '.' || quote_ident(p_view_name))::regclass
+    and c.oid != r.ev_class -- avoid self
+    and n.nspname = p_schema_name
+    union all
+    -- add objects that these objects depend on
+    select
+        case when c.relkind = 'v' then 'view'
+             when c.relkind = 'r' then 'table'
+             else c.relkind::text
+        end as object_type,
+        n.nspname as schema_name,
+        c.oid::regclass::text,
+        dependencies.level + 1
+    from dependencies
+    join pg_depend as d on d.objid = dependencies.object_name::regclass
+    join pg_class as c on c.oid = d.refobjid
+    join pg_namespace as n on n.oid = c.relnamespace
+    where d.refclassid = 'pg_class'::regclass
+    and d.deptype = 'n'
+    and c.oid::regclass::text <> dependencies.object_name  -- Avoid processing the same object again
+)
+select distinct object_type, schema_name, object_name, level from dependencies order by level, object_name;
+$$ language sql stable;
+
+create or replace function schemamap.ignored_schemas()
+returns table(nspname text) as $$
+  values ('pg_catalog'), ('information_schema'), ('schemamap')
+  -- not marking as immutable so a re-definition potentially read from the DB
+$$ language sql stable;
+
+create or replace function schemamap.master_date_entity_candidates()
+returns
+  table(schema_name text,
+        table_name text,
+        approx_rows bigint,
+        foreign_key_count bigint,
+        probability_master_data real)
+as $$
+with tablestats as (
+    select
+        ns.nspname as schema,
+        cls.relname as tablename,
+        cls.reltuples::bigint as approx_rows,
+        count(con.*) as foreign_key_count
+    from pg_catalog.pg_class cls
+    join pg_catalog.pg_namespace ns on ns.oid = cls.relnamespace
+    left join pg_catalog.pg_constraint con on con.confrelid = cls.oid
+    where cls.relkind = 'r' and ns.nspname not in (select nspname from schemamap.ignored_schemas())
+    group by 1, 2, 3
+), minmax as (
+    select
+        min(approx_rows) as min_rows,
+        max(approx_rows) as max_rows,
+        min(foreign_key_count) as min_fk,
+        max(foreign_key_count) as max_fk
+    from tablestats
+)
+select
+    schema as schema_name,
+    tablename as table_name,
+    approx_rows,
+    foreign_key_count::bigint as foreign_key_count,
+    coalesce(
+        case
+            when max_fk = min_fk and max_fk = 0 then
+                (max_rows - approx_rows)::real / nullif((max_rows - min_rows), 0)::real
+            else
+                (0.5 * ((max_rows - approx_rows)::real / nullif((max_rows - min_rows), 0)::real)) +
+                (0.5 * ((foreign_key_count - min_fk)::real / nullif((max_fk - min_fk), 0)::real))
+        end,
+        0
+    ) as probability_master_data
+from tablestats, minmax
+order by probability_master_data desc
 $$ language sql stable;
