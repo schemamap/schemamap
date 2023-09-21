@@ -77,9 +77,28 @@
     ci-test.exec = ''
       trap "jobs -p | xargs -r kill" SIGINT SIGTERM EXIT
 
-      # FIXME: after https://github.com/F1bonacc1/process-compose/issues/83
       PC_TUI_ENABLED=false devenv up &
-      sleep 5
+
+      # FIXME: after https://github.com/F1bonacc1/process-compose/issues/83
+      MAX_RETRIES=30
+      COUNT=0
+
+      while true; do
+          pg_isready -h 127.0.0.1 -U schemamap -d schemamap_test
+          if [ $? -eq 0 ]; then
+              break
+          fi
+
+          let COUNT=COUNT+1
+          if [ $COUNT -ge $MAX_RETRIES ]; then
+              echo "Failed to connect to PostgreSQL after $MAX_RETRIES seconds."
+              exit 1
+          fi
+
+          sleep 1
+      done
+
+      echo "PostgreSQL is ready!"
 
       cd clojure && clj -M:test
     '';
