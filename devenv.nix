@@ -74,6 +74,15 @@
     psql-local.exec = "psql -h 127.0.0.1 -U schemamap_test schemamap_test $@";
     psql-local-smio.exec = "psql -h 127.0.0.1 -U schemamap schemamap_test $@";
     pgclear.exec = "git clean -xf $PGDATA";
+    ci-test.exec = ''
+      trap "jobs -p | xargs -r kill" SIGINT SIGTERM EXIT
+
+      # FIXME: after https://github.com/F1bonacc1/process-compose/issues/83
+      PC_TUI_ENABLED=false devenv up &
+      sleep 5
+
+      cd clojure && clj -M:test
+    '';
   };
 
   pre-commit.hooks = {

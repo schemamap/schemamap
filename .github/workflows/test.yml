@@ -1,0 +1,33 @@
+name: "Build & Test"
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    tags:
+      - v*
+
+jobs:
+  tests:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: {{ '${{ matrix.os }}' }}
+
+    # https://github.com/cachix/devenv/pull/825
+    steps:
+    - uses: actions/checkout@v3
+    - uses: cachix/install-nix-action@v23
+      with:
+        extra_nix_config: |
+          access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+    - uses: cachix/cachix-action@v12
+      with:
+        name: devenv
+    - name: Install devenv.sh
+      run: nix profile install tarball+https://install.devenv.sh/latest
+    - name: Run pre-commit hooks, verify formats
+      run: devenv ci
+    - name: Run tests
+      run: devenv shell ci-test
