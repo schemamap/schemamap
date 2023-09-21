@@ -1,0 +1,1 @@
+clojure/resources/io/schemamap/db/migrations/

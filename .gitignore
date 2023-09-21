@@ -12,3 +12,14 @@ pom.xml.asc
 .lein-failures
 .nrepl-port
 .cpcache/
+
+# Devenv
+.devenv*
+devenv.local.nix
+
+# direnv
+.direnv
+
+# pre-commit
+.pre-commit-config.yaml
+
