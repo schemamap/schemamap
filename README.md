@@ -14,6 +14,14 @@ Integrate `schemamap` seamlessly with our language-specific SDKs. Currently, we 
 
 _Watch out for more languages coming soon! Have a request? [Open an issue](https://github.com/schemamap/schemamap/issues/new)._
 
+## Developing
+
+### First-time setup
+1. Install direnv and hook into your shell: https://direnv.net/#basic-installation
+2. Install the Nix package manager: https://github.com/DeterminateSystems/nix-installer#readme
+3. Run `direnv allow` (will prompt you to install https://devenv.sh/getting-started/#2-install-cachix, from Step 2.)
+4. To make sure the LFS files (db dumps) are present, run: `git lfs pull`
+
 ## Feedback and Contributions 👥
 We'd love to hear from you! Whether it's a bug report, feature request, or general feedback - feel free to [raise an issue](https://github.com/schemamap/schemamap/issues/new).
 
