@@ -376,3 +376,10 @@ select
 from tablestats, minmax
 order by probability_master_data desc
 $$ language sql stable;
+
+create or replace function schemamap.update_i18n (new_i18n_value jsonb)
+returns void as $$
+  update schemamap.i18n_stored set value = new_i18n_value;
+$$ language sql security definer;
+
+revoke all on function schemamap.update_i18n(jsonb) from public;

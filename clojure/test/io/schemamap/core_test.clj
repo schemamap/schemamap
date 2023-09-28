@@ -2,7 +2,18 @@
   (:require [io.schemamap.core :as sut]
             [hikari-cp.core :as hikari]
             [next.jdbc :as jdbc]
-            [clojure.test :refer :all]))
+            io.schemamap.test-util ;; loading for side-effects
+            [clojure.test :refer :all]
+            [clojure.java.io :as io]))
+
+(deftest valid-pg-role-name?
+  (are [input expected] (= expected (sut/valid-pg-role-name? input))
+    "postgres"                       true
+    "schemamap_test"                 true
+    "somerole42"                     true
+    "Robert; DROP TABLE Students;--" false
+    ""                               false
+    nil                              false))
 
 (deftest integration
   (let [app-db-role "schemamap_test"
@@ -21,10 +32,11 @@
                 app-datasource (-> db-opts
                                    (assoc
                                     :username     "schemamap_test"
-                                    :password     "schemamap_test")
+                                    :password     "schemamap_test"
+                                    :maximum-pool-size 5)
                                    (hikari/make-datasource))]
       (testing "SDK can be initialized, repeatedly"
-        (dotimes [_ 2]
+        (dotimes [nth-init 2]
           (let [client
                 (sut/init!
                  {:datasource               sm-datasource
@@ -33,14 +45,24 @@
                   :port-forward-remote-port 11111
                   :port-forward-user        (System/getenv "SCHEMAMAP_PORT_FWD_SSH_USERNAME")
                   ;; TODO: add test for this, set up special testing user
-                  :port-forward-postgres?   false})]
+                  :port-forward-postgres?   false
+
+                  :i18n (nth [(io/file "../fixtures/adventureworks_i18n.json")
+                              "{\"test\": 42}" ]
+                             nth-init)})]
             (try
               (is (= {:session nil} client))
               (finally (sut/close! client))))))
       (testing "after SDK initialization the app-db-role can use the DB interface via functions"
         (with-open [conn (jdbc/get-connection app-datasource)]
-          (jdbc/execute-one! conn ["grant usage on schema public to schemamap"])
+          (testing "i18n value can be fetched"
+            (is (= {:test 42}
+                   (-> conn
+                       (jdbc/execute-one!
+                        ["select schemamap.i18n() as i18n"])
+                       :i18n))))
           (testing "updating function definitions"
+            ;; TODO: make Adventureworks schema multi-tenant via tenant_id FKs
             (is (some?
                  (jdbc/execute-one!
                   conn
@@ -56,7 +78,7 @@
                    (jdbc/execute! conn ["select * from schemamap.list_tenants()"]))))
           (testing "asking for master data entity candidates"
             ;; run a full vaccum so row count estimates are closer to reality
-            (jdbc/execute! conn ["VACUUM(FULL, ANALYZE, VERBOSE)"])
+            (jdbc/execute! conn ["vacuum full analyze"])
             (is (= [{:schema_name         "production",
                      :table_name          "product",
                      :approx_rows         504,

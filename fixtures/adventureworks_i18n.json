@@ -1,0 +1,96 @@
+{
+  "en": {
+    "models": {
+      "product": "Product"
+    },
+    "attributes": {
+      "product": {
+        "productid": "Product ID",
+        "name": "Name",
+        "productnumber": "Product Number",
+        "makeflag": "Make Flag",
+        "finishedgoodsflag": "Finished Goods Flag",
+        "color": "Color",
+        "safetystocklevel": "Safety Stock Level",
+        "reorderpoint": "Reorder Point",
+        "standardcost": "Standard Cost",
+        "listprice": "List Price",
+        "size": "Size",
+        "sizeunitmeasurecode": "Size Unit Measure Code",
+        "weightunitmeasurecode": "Weight Unit Measure Code",
+        "weight": "Weight",
+        "daystomanufacture": "Days to Manufacture",
+        "productline": {
+          "S": "Standard",
+          "T": "Touring",
+          "M": "Mountain",
+          "R": "Road"
+        },
+        "class": {
+          "L": "Low",
+          "M": "Medium",
+          "H": "High"
+        },
+        "style": {
+          "W": "Women's",
+          "M": "Men's",
+          "U": "Universal"
+        },
+        "productsubcategoryid": "Product Subcategory ID",
+        "productmodelid": "Product Model ID",
+        "sellstartdate": "Sell Start Date",
+        "sellenddate": "Sell End Date",
+        "discontinueddate": "Discontinued Date",
+        "rowguid": "Row GUID",
+        "modifieddate": "Modified Date"
+      }
+    }
+  },
+  "de": {
+    "models": {
+      "product": "Produkt"
+    },
+    "attributes": {
+      "product": {
+        "productid": "Produkt-ID",
+        "name": "Name",
+        "productnumber": "Produkt Nummer",
+        "makeflag": "Fertigungs Kennzeichen",
+        "finishedgoodsflag": "Endprodukt Kennzeichen",
+        "color": "Farbe",
+        "safetystocklevel": "Sicherheitsbestand",
+        "reorderpoint": "Neubestellungspunkt",
+        "standardcost": "Standardkosten",
+        "listprice": "Listenpreis",
+        "size": "Größe",
+        "sizeunitmeasurecode": "Maßeinheit der Größe",
+        "weightunitmeasurecode": "Maßeinheit des Gewichts",
+        "weight": "Gewicht",
+        "daystomanufacture": "Herstellungstage",
+        "productline": {
+          "S": "Standard",
+          "T": "Tour",
+          "M": "Berg",
+          "R": "Straße"
+        },
+        "class": {
+          "L": "Niedrig",
+          "M": "Mittel",
+          "H": "Hoch"
+        },
+        "style": {
+          "W": "Frauen",
+          "M": "Männer",
+          "U": "Universal"
+        },
+        "productsubcategoryid": "Produkt-Unterkategorie-ID",
+        "productmodelid": "Produktmodell-ID",
+        "sellstartdate": "Verkaufsstartdatum",
+        "sellenddate": "Verkaufsenddatum",
+        "discontinueddate": "Auslaufdatum",
+        "rowguid": "Reihen GUID",
+        "modifieddate": "Änderungsdatum"
+      }
+    }
+  }
+}

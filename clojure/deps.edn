@@ -14,6 +14,7 @@
                        ;; integration test dependencies
                        hikari-cp/hikari-cp       {:mvn/version "3.0.1"}
                        org.postgresql/postgresql {:mvn/version "42.6.0"}
+                       metosin/jsonista {:mvn/version "0.3.7"}
 
                        ;; provide slf4j binding so clojure.tools.logging works
                        ch.qos.logback/logback-classic {:mvn/version "1.4.11"}
