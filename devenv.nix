@@ -99,26 +99,28 @@ in
 
       PC_TUI_ENABLED=false devenv up &
 
-      # FIXME: after https://github.com/F1bonacc1/process-compose/issues/83
       MAX_RETRIES=30
       COUNT=0
 
+      set -o pipefail
       while true; do
-          pg_isready -h 127.0.0.1 -U schemamap -d schemamap_test
+          ${pkgs.curl}/bin/curl -s 'http://127.0.0.1:9999/process/seed-postgres' -H 'accept: application/json' | \
+            ${pkgs.jq}/bin/jq -e '[.status, .exit_code] == ["Completed",0]'
+
           if [ $? -eq 0 ]; then
               break
           fi
 
           let COUNT=COUNT+1
           if [ $COUNT -ge $MAX_RETRIES ]; then
-              echo "Failed to connect to PostgreSQL after $MAX_RETRIES seconds."
+              echo "Failed to seed PostgreSQL after $MAX_RETRIES seconds."
               exit 1
           fi
 
           sleep 1
       done
 
-      echo "PostgreSQL is ready!"
+      echo "PostgreSQL is ready and seeded!"
 
       cd clojure && clj -M:test
     '';
