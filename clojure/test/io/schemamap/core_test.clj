@@ -14,7 +14,9 @@
     (with-open [sm-datasource  (-> db-opts
                                    (assoc
                                     :username     "schemamap"
-                                    :password     "schemamap")
+                                    :password     "schemamap"
+                                    :minimum-idle 1
+                                    :maximum-pool-size 2)
                                    (hikari/make-datasource))
                 app-datasource (-> db-opts
                                    (assoc
