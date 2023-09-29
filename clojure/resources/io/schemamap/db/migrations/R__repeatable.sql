@@ -325,12 +325,6 @@ with recursive dependencies as (
 select distinct object_type, schema_name, object_name, level from dependencies order by level, object_name;
 $$ language sql stable;
 
-create or replace function schemamap.ignored_schemas()
-returns table(nspname text) as $$
-  values ('pg_catalog'), ('information_schema'), ('schemamap')
-  -- not marking as immutable so a re-definition potentially read from the DB
-$$ language sql stable;
-
 create or replace function schemamap.master_date_entity_candidates()
 returns
   table(schema_name text,
@@ -376,10 +370,3 @@ select
 from tablestats, minmax
 order by probability_master_data desc
 $$ language sql stable;
-
-create or replace function schemamap.update_i18n (new_i18n_value jsonb)
-returns void as $$
-  update schemamap.i18n_stored set value = new_i18n_value;
-$$ language sql security definer;
-
-revoke all on function schemamap.update_i18n(jsonb) from public;

@@ -64,7 +64,7 @@
       (log/info "Granting schemamap schema usage permissions to role:" application-db-roles)
       (jdbc/execute! conn [(format "grant usage on schema schemamap to %s" role)])
       (jdbc/execute! conn [(format "grant execute on all functions in schema schemamap to %s" role)])
-      (jdbc/execute! conn [(format "grant select on schemamap.i18n_stored to %s" role)]))
+      (jdbc/execute! conn [(format "grant select on schemamap.i18n_stored, schemamap.schema_metadata_overview to %s" role)]))
 
     (when i18n
       (log/info "Overriding schemamap.i18n() value")
