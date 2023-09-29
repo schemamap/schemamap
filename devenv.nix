@@ -95,9 +95,12 @@ in
     psql-local-smio.exec = "psql -h 127.0.0.1 -U schemamap schemamap_test $@";
     pgclear.exec = "git clean -xf $PGDATA";
     ci-test.exec = ''
-      trap "jobs -p | xargs -r kill" SIGINT SIGTERM EXIT
-
+      set -m # make devenv up manage it's own subprocesses in its own process group
       PC_TUI_ENABLED=false devenv up &
+      DEVENV_PID=$!
+      # terminate whole process group as devenv up does not forward signals (and doesn't exec the procfilescript)
+      trap "kill -- -$DEVENV_PID" SIGINT SIGTERM EXIT
+
 
       MAX_RETRIES=30
       COUNT=0
@@ -105,7 +108,7 @@ in
       set -o pipefail
       while true; do
           ${pkgs.curl}/bin/curl -s 'http://127.0.0.1:9999/process/seed-postgres' -H 'accept: application/json' | \
-            ${pkgs.jq}/bin/jq -e '[.status, .exit_code] == ["Completed",0]'
+            ${pkgs.jq}/bin/jq -e '.status == "Completed"'
 
           if [ $? -eq 0 ]; then
               break
