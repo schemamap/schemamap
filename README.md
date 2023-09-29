@@ -22,6 +22,11 @@ _Watch out for more languages coming soon! Have a request? [Open an issue](https
 3. Run `direnv allow` (will prompt you to install https://devenv.sh/getting-started/#2-install-cachix, from Step 2.)
 4. To make sure the LFS files (db dumps) are present, run: `git lfs pull`
 
+### Day-to-day operations
+1. `devenv up` to bring up the development environment services
+2. `ci-test` to run the integration test suite locally
+3. `devenv info` to see what packages and scripts are available
+
 ## Feedback and Contributions 👥
 We'd love to hear from you! Whether it's a bug report, feature request, or general feedback - feel free to [raise an issue](https://github.com/schemamap/schemamap/issues/new).
 
