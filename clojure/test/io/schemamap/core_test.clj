@@ -49,7 +49,7 @@
                   :port-forward-postgres?   false
 
                   :i18n (nth [(io/file "../fixtures/adventureworks_i18n.json")
-                              "{\"test\": 42}" ]
+                              "{\"test\": 42}"]
                              nth-init)})]
             (try
               (is (= {:session nil} client))
@@ -136,73 +136,73 @@
                     ["select schema_name, table_name, approx_rows, foreign_key_count,
                              round(probability_master_data::numeric, 2) as rounded_probability
                       from schemamap.master_date_entity_candidates() limit 10;"]))))
-            (testing "querying schema metadata overview"
-              (is (=
-                   {:constraints
-                    [{:definition "UNIQUE (rowguid)",
-                      :name       "document_rowguid_key",
-                      :type       "u"}],
-                    :schema_name       "production",
-                    :column_description
-                    "ROWGUIDCOL number uniquely identifying the record. Required for FileStream.",
-                    :object_type       "r",
-                    :not_null          true,
-                    :table_description "Product maintenance documents.",
-                    :data_type         "uuid",
-                    :indexes           [{:name "document_rowguid_key", :is_unique true}],
-                    :column_name       "rowguid",
-                    :table_name        "document",
-                    :default_value     "uuid_generate_v1()"}
-                   (jdbc/execute-one!
-                    conn
-                    ["select *
+          (testing "querying schema metadata overview"
+            (is (=
+                 {:constraints
+                  [{:definition "UNIQUE (rowguid)",
+                    :name       "document_rowguid_key",
+                    :type       "u"}],
+                  :schema_name       "production",
+                  :column_description
+                  "ROWGUIDCOL number uniquely identifying the record. Required for FileStream.",
+                  :object_type       "r",
+                  :not_null          true,
+                  :table_description "Product maintenance documents.",
+                  :data_type         "uuid",
+                  :indexes           [{:name "document_rowguid_key", :is_unique true}],
+                  :column_name       "rowguid",
+                  :table_name        "document",
+                  :default_value     "uuid_generate_v1()"}
+                 (jdbc/execute-one!
+                  conn
+                  ["select *
                       from schemamap.schema_metadata_overview
                       where indexes is not null and constraints is not null
                       order by schema_name, table_name, column_name
                       limit 1"]
-                    {:builder-fn jdbc.rs/as-unqualified-maps}))))
-            (testing "asking what-if questions by updating schema in transactions"
+                  {:builder-fn jdbc.rs/as-unqualified-maps}))))
+          (testing "asking what-if questions by updating schema in transactions"
               ;; baseline: how many columns do we know about per schema?
-              (let [verify-baseline! (fn [connectable]
-                                       (is (= [{:schema_name "sales", :count 233}
-                                               {:schema_name "production", :count 208}
-                                               {:schema_name "pr", :count 188}
-                                               {:schema_name "sa", :count 150}
-                                               {:schema_name "humanresources", :count 118}
-                                               {:schema_name "person", :count 94}
-                                               {:schema_name "pe", :count 82}
-                                               {:schema_name "purchasing", :count 67}
-                                               {:schema_name "pu", :count 51}
-                                               {:schema_name "hr", :count 45}]
-                                              (jdbc/execute!
-                                               connectable
-                                               ["select schema_name, count(*) from schemamap.schema_metadata_overview group by 1 order by 2 desc"]
-                                               {:builder-fn jdbc.rs/as-unqualified-maps}))))]
-                (jdbc/with-transaction [tx conn {:rollback-only true}]
-                  (verify-baseline! tx)
+            (let [verify-baseline! (fn [connectable]
+                                     (is (= [{:schema_name "sales", :count 233}
+                                             {:schema_name "production", :count 208}
+                                             {:schema_name "pr", :count 188}
+                                             {:schema_name "sa", :count 150}
+                                             {:schema_name "humanresources", :count 118}
+                                             {:schema_name "person", :count 94}
+                                             {:schema_name "pe", :count 82}
+                                             {:schema_name "purchasing", :count 67}
+                                             {:schema_name "pu", :count 51}
+                                             {:schema_name "hr", :count 45}]
+                                            (jdbc/execute!
+                                             connectable
+                                             ["select schema_name, count(*) from schemamap.schema_metadata_overview group by 1 order by 2 desc"]
+                                             {:builder-fn jdbc.rs/as-unqualified-maps}))))]
+              (jdbc/with-transaction [tx conn {:rollback-only true}]
+                (verify-baseline! tx)
 
                   ;; mutate the schema
-                  (jdbc/execute-one! tx ["drop table production.document cascade"])
+                (jdbc/execute-one! tx ["drop table production.document cascade"])
 
                   ;; refresh the materialized view
-                  (jdbc/execute-one! tx ["select * from schemamap.update_schema_metadata_overview(concurrently := false)"])
+                (jdbc/execute-one! tx ["select * from schemamap.update_schema_metadata_overview(concurrently := false)"])
 
-                  (is (= [{:schema_name "sales", :count 233}
+                (is (= [{:schema_name "sales", :count 233}
 
                           ;; reduced column counts caused by the cascading table drop
-                          {:schema_name "production", :count 195}
-                          {:schema_name "pr", :count 175}
+                        {:schema_name "production", :count 195}
+                        {:schema_name "pr", :count 175}
 
-                          {:schema_name "sa", :count 150}
-                          {:schema_name "humanresources", :count 118}
-                          {:schema_name "person", :count 94}
-                          {:schema_name "pe", :count 82}
-                          {:schema_name "purchasing", :count 67}
-                          {:schema_name "pu", :count 51}
-                          {:schema_name "hr", :count 45}]
-                         (jdbc/execute!
-                          tx
-                          ["select schema_name, count(*) from schemamap.schema_metadata_overview group by 1 order by 2 desc"]
-                          {:builder-fn jdbc.rs/as-unqualified-maps}))))
+                        {:schema_name "sa", :count 150}
+                        {:schema_name "humanresources", :count 118}
+                        {:schema_name "person", :count 94}
+                        {:schema_name "pe", :count 82}
+                        {:schema_name "purchasing", :count 67}
+                        {:schema_name "pu", :count 51}
+                        {:schema_name "hr", :count 45}]
+                       (jdbc/execute!
+                        tx
+                        ["select schema_name, count(*) from schemamap.schema_metadata_overview group by 1 order by 2 desc"]
+                        {:builder-fn jdbc.rs/as-unqualified-maps}))))
                 ;; after the transaction rolls back, we get the original baseline
-                (verify-baseline! conn))))))))
+              (verify-baseline! conn))))))))

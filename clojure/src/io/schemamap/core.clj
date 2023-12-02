@@ -78,18 +78,18 @@
            port-forward-postgres?]
     :or   {port-forward-postgres? false
            port-forward-host      "pgtunnel.eu.schemamap.io"}}]
- (if (and port-forward-remote-port port-forward-postgres?)
-   (do
-     (log/info "Starting Postgres SSH port forwarding to" port-forward-host)
-     (let [ssh-agent  (ssh/ssh-agent {:use-system-ssh-agent true})
-           local-port port-forward-port]
-       (start-ssh-forwarding!
-        ssh-agent
-        {:host        port-forward-host
-         :username    port-forward-user
-         :local-port  local-port
-         :remote-port port-forward-remote-port})))
-   (log/debug "Skipping Postgres SSH port forwarding")) )
+  (if (and port-forward-remote-port port-forward-postgres?)
+    (do
+      (log/info "Starting Postgres SSH port forwarding to" port-forward-host)
+      (let [ssh-agent  (ssh/ssh-agent {:use-system-ssh-agent true})
+            local-port port-forward-port]
+        (start-ssh-forwarding!
+         ssh-agent
+         {:host        port-forward-host
+          :username    port-forward-user
+          :local-port  local-port
+          :remote-port port-forward-remote-port})))
+    (log/debug "Skipping Postgres SSH port forwarding")))
 
 (defn init!
   [{:keys [^DataSource datasource
@@ -127,5 +127,4 @@
       :remote-port     11111
       :connect-timeout 2000}))
 
-  (.disconnect session)
-  )
+  (.disconnect session))
