@@ -97,7 +97,7 @@ in {
       trap "kill -- -$DEVENV_PID" SIGINT SIGTERM EXIT
 
 
-      MAX_RETRIES=30
+      MAX_RETRIES=60
       COUNT=0
 
       set -o pipefail
