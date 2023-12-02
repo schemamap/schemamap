@@ -1,20 +1,18 @@
 { pkgs, lib, ... }:
 
-let
-  postgres = pkgs.postgresql_15;
-in
-{
-  packages =
-    with pkgs; [
-      flyway.out
-      shellcheck
-      nix-output-monitor
-      shfmt
-      nixpkgs-fmt
-      git-lfs
-      zstd
-      (pkgs.callPackage ./devenv/create-flyway-migration.nix { })
-    ];
+let postgres = pkgs.postgresql_15;
+in {
+  packages = with pkgs; [
+    flyway.out
+    shellcheck
+    nix-output-monitor
+    shfmt
+    nixpkgs-fmt
+    cljfmt
+    git-lfs
+    zstd
+    (pkgs.callPackage ./devenv/create-flyway-migration.nix { })
+  ];
 
   languages = {
     clojure.enable = true;
@@ -29,10 +27,7 @@ in
       enable = true;
       package = postgres;
       extensions = extensions: [ ];
-      initdbArgs = [
-        "--locale=C"
-        "--encoding=UTF8"
-      ];
+      initdbArgs = [ "--locale=C" "--encoding=UTF8" ];
       initialDatabases = [{ name = "schemamap_test"; }];
 
       initialScript = ''
@@ -130,10 +125,18 @@ in
   };
 
   pre-commit.hooks = {
+    cljfmt = {
+      enable = true;
+      name = "cljfmt";
+      description = "A tool for formatting Clojure code";
+      entry = "${pkgs.cljfmt}/bin/cljfmt fix";
+      types_or = [ "clojure" "clojurescript" "edn" ];
+    };
     editorconfig-checker = {
       enable = true;
       # NOTE: .clj files have dynamic indentation, disable check
-      entry = lib.mkForce "${pkgs.editorconfig-checker}/bin/editorconfig-checker --disable-indent-size";
+      entry = lib.mkForce
+        "${pkgs.editorconfig-checker}/bin/editorconfig-checker --disable-indent-size";
     };
     nixpkgs-fmt.enable = true;
     shellcheck.enable = true;
