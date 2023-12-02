@@ -15,19 +15,39 @@ jobs:
         os: [[ubuntu-latest], [macos-latest]]
     runs-on: ${{ matrix.os }}
 
-    # https://github.com/cachix/devenv/pull/825
     steps:
-    - uses: actions/checkout@v3
-    - uses: cachix/install-nix-action@v23
+    - uses: actions/checkout@v4
+
+    - uses: nixbuild/nix-quick-install-action@v26
       with:
-        extra_nix_config: |
+        nix_conf: |
           access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+          keep-outputs = true
+
+    # https://github.com/nix-community/cache-nix-action#usage
+    - name: Restore and cache Nix store
+      uses: nix-community/cache-nix-action@v4
+      with:
+        key: cache-${{ matrix.os }}-${{ hashFiles('devenv.*') }}
+        restore-keys: |
+          cache-${{ matrix.os }}-
+
+        gc-linux: true
+        gc-max-store-size-linux: 1000000000
+
+        purge-caches: true
+        purge-key: cache-${{ matrix.os }}-
+        purge-created: true
+        purge-created-max-age: 42
+
     - uses: cachix/cachix-action@v12
       with:
         name: devenv
     - name: Install devenv.sh
       run: nix profile install tarball+https://install.devenv.sh/latest
+
     - name: Run pre-commit hooks, verify formats
       run: devenv ci
+
     - name: Run tests
       run: devenv shell ci-test
