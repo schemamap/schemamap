@@ -1,8 +1,7 @@
 (ns io.schemamap.core
   (:gen-class)
   (:require [clojure.tools.logging :as log]
-            [next.jdbc :as jdbc]
-            [clj-ssh.ssh :as ssh])
+            [next.jdbc :as jdbc])
   (:import
    (org.flywaydb.core Flyway)
    (javax.sql DataSource)))
@@ -21,15 +20,16 @@
                  connect-timeout]
           :or   {connect-timeout 5000}}]
   (let [ssh-service-port 22 #_2222
-        session          (ssh/session agent host {:port                     ssh-service-port
-                                                  :username                 username
-                                                  :strict-host-key-checking :no})]
+        session          ((requiring-resolve 'clj-ssh.ssh/session)
+                          agent host {:port                     ssh-service-port
+                                      :username                 username
+                                      :strict-host-key-checking :no})]
     (log/infof "Trying connecting to %s@%s:%s" username host ssh-service-port)
-    (ssh/connect session connect-timeout)
+    ((requiring-resolve 'clj-ssh.ssh/connect) session connect-timeout)
     (log/infof "Connected to %s@%s:%s" username host ssh-service-port)
 
     (log/infof "Forwarding local port %s to remote port %s" local-port remote-port)
-    (ssh/forward-remote-port session remote-port local-port)
+    ((requiring-resolve 'clj-ssh.ssh/forward-remote-port) session remote-port local-port)
     session))
 
 (defn read-i18n-string!
@@ -81,7 +81,7 @@
   (if (and port-forward-remote-port port-forward-postgres?)
     (do
       (log/info "Starting Postgres SSH port forwarding to" port-forward-host)
-      (let [ssh-agent  (ssh/ssh-agent {:use-system-ssh-agent true})
+      (let [ssh-agent  ((requiring-resolve 'clj-ssh.ssh/ssh-agent) {:use-system-ssh-agent true})
             local-port port-forward-port]
         (start-ssh-forwarding!
          ssh-agent
@@ -115,8 +115,10 @@
     (.disconnect session)))
 
 (comment
-  (def ssh-agent (ssh/ssh-agent {:use-system-ssh-agent true}))
-  (.getIdentityNames ssh-agent)
+  (do
+    (require '[clj-ssh.ssh :as ssh])
+    (def ssh-agent (ssh/ssh-agent {:use-system-ssh-agent true}))
+    (.getIdentityNames ssh-agent))
 
   (def session
     (start-ssh-forwarding!
