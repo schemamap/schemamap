@@ -1,0 +1,25 @@
+default:
+  @just --list
+
+# Run tests
+test:
+    clojure -M:test
+
+# Build the project
+build:
+    clojure -T:build jar
+
+release: build
+    clojure -T:build deploy
+
+# Clean build artifacts
+clean:
+    rm -rf target
+
+# Lint the project
+lint:
+    clj-kondo --lint src --fail-level error
+
+# Format source code
+format:
+    cljfmt fix src

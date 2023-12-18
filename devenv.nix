@@ -10,6 +10,7 @@ in {
     nixpkgs-fmt
     cljfmt
     git-lfs
+    just
     zstd
     (pkgs.callPackage ./devenv/create-flyway-migration.nix { })
   ];

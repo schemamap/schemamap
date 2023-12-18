@@ -10,7 +10,9 @@ Brought to you by [schemamap.io](https://schemamap.io).
 
 ## SDKs Supported 🛠️
 Integrate `schemamap` seamlessly with our language-specific SDKs. Currently, we support:
-- **Clojure**: Dive into the documentation [here](./clojure/README.md).
+- **Clojure**:
+  [![Clojars Project](https://img.shields.io/clojars/v/io.schemamap/schemamap-clj.svg)](https://clojars.org/io.schemamap/schemamap-clj)
+  Dive into the documentation [here](./clojure/README.md).
 
 _Watch out for more languages coming soon! Have a request? [Open an issue](https://github.com/schemamap/schemamap/issues/new)._
 
