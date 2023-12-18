@@ -14,10 +14,13 @@
                        ;; integration test dependencies
                        hikari-cp/hikari-cp       {:mvn/version "3.0.1"}
                        org.postgresql/postgresql {:mvn/version "42.6.0"}
-                       metosin/jsonista {:mvn/version "0.3.7"}
+                       metosin/jsonista          {:mvn/version "0.3.7"}
 
                        ;; provide slf4j binding so clojure.tools.logging works
                        ch.qos.logback/logback-classic {:mvn/version "1.4.11"}
-                       org.slf4j/slf4j-api {:mvn/version "2.0.9"}}
+                       org.slf4j/slf4j-api            {:mvn/version "2.0.9"}}
          :main-opts ["-m" "cognitect.test-runner"]
-         :exec-fn   cognitect.test-runner.api/test}}}
+         :exec-fn   cognitect.test-runner.api/test}
+  :build {:deps       {io.github.clojure/tools.build {:mvn/version "0.9.6"}
+                       slipset/deps-deploy           {:mvn/version "0.2.2"}}
+          :ns-default build}}}
