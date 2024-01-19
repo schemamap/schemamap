@@ -1,0 +1,13 @@
+version: '0.5'
+# https://github.com/F1bonacc1/process-compose/wiki/Multiple-Compose-Files
+tui: false
+processes:
+  ci-test:
+    command: clj -M:test
+    working_dir: clojure
+    depends_on:
+      seed-postgres:
+        condition: process_completed
+    # https://github.com/F1bonacc1/process-compose#terminate-process-compose-once-given-process-ends
+    availability:
+      exit_on_end: true
