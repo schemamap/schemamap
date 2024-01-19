@@ -7,7 +7,7 @@ Add to your deps.edn file as a:
 Maven-dependency, via Clojars.org: 
 
 ``` clojure
-io.schemamap/schemamap-clj {:mvn/version "0.0.2"}
+io.schemamap/schemamap-clj {:mvn/version "0.1.0"}
 ```
 
 Git-dependency:
