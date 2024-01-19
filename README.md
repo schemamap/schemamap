@@ -13,6 +13,8 @@ Integrate `schemamap` seamlessly with our language-specific SDKs. Currently, we 
 - **Clojure**:
   [![Clojars Project](https://img.shields.io/clojars/v/io.schemamap/schemamap-clj.svg)](https://clojars.org/io.schemamap/schemamap-clj)
   Dive into the documentation [here](./clojure/README.md).
+- **Bash**
+  In the works...
 
 _Watch out for more languages coming soon! Have a request? [Open an issue](https://github.com/schemamap/schemamap/issues/new)._
 
@@ -25,14 +27,14 @@ _Watch out for more languages coming soon! Have a request? [Open an issue](https
 4. To make sure the LFS files (db dumps) are present, run: `git lfs pull`
 
 ### Day-to-day operations
-1. `devenv up` to bring up the development environment services
-2. `ci-test` to run the integration test suite locally
+1. `process-compose` to bring up the development environment services
+2. `ci-test` to run the integration test suite locally (shut down `process-compose` beforehand)
 3. `devenv info` to see what packages and scripts are available
 
 ## Feedback and Contributions 👥
 We'd love to hear from you! Whether it's a bug report, feature request, or general feedback - feel free to [raise an issue](https://github.com/schemamap/schemamap/issues/new).
 
 ## License 📜
-Copyright © 2023 Schemamap.io Kft.
+Copyright © 2023-2024 Schemamap.io Kft.
 
 This project is distributed under the MIT License. For more details, refer to the [LICENSE](./LICENSE) file.

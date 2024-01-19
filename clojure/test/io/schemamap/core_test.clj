@@ -63,7 +63,6 @@
                         ["select schemamap.i18n() as i18n"])
                        :i18n))))
           (testing "updating function definitions"
-            ;; TODO: make Adventureworks schema multi-tenant via tenant_id FKs
             (is (some?
                  (jdbc/execute-one!
                   conn
@@ -71,11 +70,15 @@
                     select
                       1 as tenant_id,
                       'test_tenant' as tenant_short_name,
-                      'Test Tenant' as tenant_display_name
+                      'Test Tenant' as tenant_display_name,
+                      'en_US' as tenant_locale,
+                      null::jsonb as tenant_data
                   $$)"])))
             (is (= [{:tenant_id           "1",
                      :tenant_short_name   "test_tenant",
-                     :tenant_display_name "Test Tenant"}]
+                     :tenant_display_name "Test Tenant"
+                     :tenant_locale       "en_US"
+                     :tenant_data         nil}]
                    (jdbc/execute! conn ["select * from schemamap.list_tenants()"]))))
           (testing "asking for master data entity candidates"
             ;; run a full vaccum so row count estimates are closer to reality
@@ -158,7 +161,7 @@
                   ["select *
                       from schemamap.schema_metadata_overview
                       where indexes is not null and constraints is not null
-                      order by schema_name, table_name, column_name
+                      order by jsonb_array_length(constraints) desc nulls last
                       limit 1"]
                   {:builder-fn jdbc.rs/as-unqualified-maps}))))
           (testing "asking what-if questions by updating schema in transactions"

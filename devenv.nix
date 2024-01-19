@@ -1,4 +1,4 @@
-{ pkgs, lib, ... }:
+{ pkgs, config, lib, ... }:
 
 let postgres = pkgs.postgresql_15;
 in {
@@ -90,40 +90,12 @@ in {
     psql-local.exec = "psql -h 127.0.0.1 -U schemamap_test schemamap_test $@";
     psql-local-smio.exec = "psql -h 127.0.0.1 -U schemamap schemamap_test $@";
     pgclear.exec = "git clean -xf $PGDATA";
-    ci-test.exec = ''
-      set -m # make devenv up manage it's own subprocesses in its own process group
-      PC_TUI_ENABLED=false devenv up &
-      DEVENV_PID=$!
-      # terminate whole process group as devenv up does not forward signals (and doesn't exec the procfilescript)
-      trap "kill -- -$DEVENV_PID" SIGINT SIGTERM EXIT
-
-
-      MAX_RETRIES=60
-      COUNT=0
-
-      set -o pipefail
-      while true; do
-          ${pkgs.curl}/bin/curl -s 'http://127.0.0.1:9999/process/seed-postgres' -H 'accept: application/json' | \
-            ${pkgs.jq}/bin/jq -e '.status == "Completed"'
-
-          if [ $? -eq 0 ]; then
-              break
-          fi
-
-          let COUNT=COUNT+1
-          if [ $COUNT -ge $MAX_RETRIES ]; then
-              echo "Failed to seed PostgreSQL after $MAX_RETRIES seconds."
-              exit 1
-          fi
-
-          sleep 1
-      done
-
-      echo "PostgreSQL is ready and seeded!"
-
-      cd clojure && clj -M:test
-    '';
+    ci-test.exec = "process-compose --tui=false up -f process-compose.yml -f process-compose.test.yml";
   };
+
+  enterShell = ''
+    ln -sf ${config.process-managers.process-compose.configFile} ${config.env.DEVENV_ROOT}/process-compose.yml
+  '';
 
   pre-commit.hooks = {
     cljfmt = {

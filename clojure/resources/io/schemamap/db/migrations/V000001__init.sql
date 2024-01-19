@@ -200,6 +200,12 @@ returns table(mde_name text) as $$
   where table_schema = 'schemamap' and table_name like 'mde\_%' escape '\';
 $$ language sql stable;
 
+create or replace function schemamap.ignored_schemas()
+returns table(nspname text) as $$
+  values ('pg_catalog'), ('information_schema'), ('schemamap')
+  -- not marking as immutable so a re-definition can potentially read from the DB
+$$ language sql stable;
+
 create or replace function schemamap.master_date_entity_candidates()
 returns
   table(schema_name text,
@@ -267,12 +273,6 @@ $$ language sql security definer;
 
 revoke all on function schemamap.update_i18n(jsonb) from public;
 
-create or replace function schemamap.ignored_schemas()
-returns table(nspname text) as $$
-  values ('pg_catalog'), ('information_schema'), ('schemamap')
-  -- not marking as immutable so a re-definition can potentially read from the DB
-$$ language sql stable;
-
 create materialized view if not exists schemamap.schema_metadata_overview as
 with ignored_schemas as (
   select nspname from schemamap.ignored_schemas()
@@ -321,7 +321,7 @@ constraints as (
     pc.conkey::int[] as constraint_keys,
     pc.confkey::int[] as foreign_keys
   from pg_constraint pc
-  join pg_class c on c.oid = pc.confrelid or c.oid = pc.conrelid
+  join pg_class c on c.oid = pc.conrelid
   join pg_namespace n on n.oid = c.relnamespace
   where n.nspname not in (select nspname from ignored_schemas)
 ),
