@@ -181,16 +181,6 @@ end; $$ language plpgsql volatile security definer;
 -- https://www.postgresql.org/docs/current/sql-createfunction.html#SQL-CREATEFUNCTION-SECURITY
 revoke all on function schemamap.update_function_definition(text, text) from public;
 
-create or replace function schemamap.verify_installation()
-returns table(tenants_defined boolean,
-              mdes_defined boolean,
-              external_sources_defined boolean) as $$
-  select
-    exists(select 1 from schemamap.list_tenants() where tenant_id is not null) as tenants_defined,
-    false as mdes_defined,
-    false as external_sources_defined
-$$ language sql stable;
-
 create or replace function schemamap.define_master_data_entity
 (mde_name text, new_body text)
 returns void as $$
@@ -477,3 +467,10 @@ begin
 end; $$ language plpgsql security definer;
 
 revoke all on function schemamap.update_schema_metadata_overview(boolean) from public;
+
+create or replace function schemamap.verify_installation()
+returns table(tenants_defined boolean, mdes_defined boolean) as $$
+  select
+    exists(select 1 from schemamap.list_tenants() where tenant_id is not null) as tenants_defined,
+    exists(select 1 from schemamap.list_mdes() where mde_name is not null) as mdes_defined
+$$ language sql stable;
