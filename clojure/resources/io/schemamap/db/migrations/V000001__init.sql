@@ -12,7 +12,7 @@ returns table (
     null as tenant_short_name,
     null as tenant_display_name,
     null as tenant_locale,
-    null as tenant_data
+    null::jsonb as tenant_data
   where 'TODO' is null;
 $$ language sql stable;
 
