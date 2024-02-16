@@ -84,6 +84,9 @@ in {
         depends_on.postgres.condition = "process_healthy";
       };
     };
+
+    # override CWD of bash devenv process so it runs in the correct folder
+    schemamap-cli.process-compose.working_dir = "bash";
   };
 
   scripts = {
