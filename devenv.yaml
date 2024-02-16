@@ -10,3 +10,5 @@ inputs:
     url: github:ryantm/agenix
   clj-nix:
     url: github:jlesquembre/clj-nix
+imports:
+  - ./bash
