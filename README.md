@@ -2,9 +2,11 @@
 
 This repository contains the open-source SQL schema and SDKs of [Schemamap.io](https://schemamap.io).
 
-## TLDR
+## When to use Schemamap.io
 
-| What you need      | System that infers it from your Postgres schema       |
+Comparison to similar tools:
+
+| Need | Solutions |
 |--------------------|-------------------------------------------------------|
 | REST API           | [Postgrest](https://postgrest.org/en/stable/)         |
 | GraphQL API        | [Hasura](https://hasura.io/), [Supabase](https://github.com/supabase/pg_graphql) |
@@ -20,39 +22,35 @@ As your schema evolves (new columns/tables) so do your table-based interfaces, a
 
 ## Formats supported
 
-- Free:
-  - CSV
-- Usage-based API integrations:
-  - Google Sheets
-- Work in Progress:
-  - Excel (`.xls` and `.xlsx`)
-  - Salesforce API
+- CSV
+- Google Sheets
+- Excel (`.xls` and `.xlsx`) (Work in progress)
+- Salesforce API (Work in progress)
 
 ## Features
 
-- **Database Migrations**: SQL scripts that add `schemamap` schema and roles to your DB.
-- **Security**: Robust handling for application Postgres DB roles / RLS
-  - [PoLP](https://en.wikipedia.org/wiki/Principle_of_least_privilege)
-  - Multiple roles with incrementally more privileges
-    - Schema read access
-    - Read-only access (to the minimum subset of tables, for exporting data)
-    - Write access (to the minimum subset of tables, to import data without writing application layer code)
-  - Give access as much or as little, given your security & threat model.
-  - Support tenant-scoped roles that guarantee safe access via row-level-security
-- **Schema as a View**: To support analysis, schema metadata is collected into a materialized view.
+- **Schema as a View**: To support analysis, schema metadata is collected into a column-wise materialized view.
   - Query and analyze your schema with simple SQL queries, get holistic view of anomalies/exceptions to the patterns in your DB.
   - Great for onboarding new developers without needing an ER diagram
   - Schedule refresh at your convenience by just calling a SQL function:
     - periodically, using [pg_cron](https://github.com/citusdata/pg_cron)
     - after SQL migrations
     - from application code
+- **Security**: Robust handling for application Postgres DB roles / RLS
+  - [Principle of least privilege](https://en.wikipedia.org/wiki/Principle_of_least_privilege)
+  - Multiple roles with incrementally more privileges
+    - Schema read access
+    - Read-only access (to the minimum subset of tables, for exporting data)
+    - Write access (to the minimum subset of tables, to import data without writing application layer code)
+  - Give access as much or as little, given your security & threat model.
+  - Support tenant-scoped roles that guarantee safe access via row-level-security
 - **SSH Port-Forwarding**: Connect your local/Docker Postgres securely for a local-first developer experience.
   - Provide your SSH public key, and get a personalized connection/port, that only you can access.
   - No need to setup firewall rules/Ngrok/bastion hosts to try out the feature-set.
   - Use with local mock/seed data or with an empty DB.
   - Get setup/usage help interactively from the app, while coding along in your favorite SQL client/psql.
 
-## SDKs Supported 🛠️
+## SDKs Supported
 
 Integrate `schemamap` seamlessly with language-specific SDKs.
 
@@ -77,7 +75,7 @@ _Watch out for more languages coming soon! Have a request? [Open an issue](https
 2. `ci-test` to run the integration test suite locally (shut down `process-compose` beforehand)
 3. `devenv info` to see what packages and scripts are available
 
-## Feedback and Contributions 👥
+## Feedback and Contributions
 We'd love to hear from you! Whether it's a bug report, feature request, or general feedback - feel free to [raise an issue](https://github.com/schemamap/schemamap/issues/new).
 
 ## Security Policy
@@ -90,7 +88,7 @@ We'll get back to you ASAP and work with you to confirm and plan a fix for the i
 
 Please note that we do not currently offer a bug bounty program.
 
-## License 📜
+## License
 Copyright © 2023-2024 Schemamap.io Kft.
 
 This project is distributed under the MIT License. For more details, refer to the [LICENSE](./LICENSE) file.

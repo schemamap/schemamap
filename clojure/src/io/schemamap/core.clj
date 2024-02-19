@@ -124,7 +124,7 @@
     (start-ssh-forwarding!
      ssh-agent
      {:host            "pgtunnel.eu.schemamap.io"
-      :username        "pgtunnel_frutico_krisz"
+      :username        "pgtunnel_schemamap_krisz"
       :local-port      5437
       :remote-port     11111
       :connect-timeout 2000}))
