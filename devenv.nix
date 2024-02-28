@@ -108,6 +108,7 @@ in {
       entry = "${pkgs.cljfmt}/bin/cljfmt fix";
       types_or = [ "clojure" "clojurescript" "edn" ];
     };
+    actionlint.enable = true; # for .github/workflows
     editorconfig-checker = {
       enable = true;
       # NOTE: .clj files have dynamic indentation, disable check
