@@ -44,7 +44,7 @@ jobs:
       with:
         name: devenv
     - name: Install devenv.sh
-      run: nix profile install tarball+https://install.devenv.sh/latest
+      run: nix profile install tarball+https://github.com/cachix/devenv/tarball/v0.6.3
 
     - name: Run pre-commit hooks, verify formats
       run: devenv ci
