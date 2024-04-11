@@ -7,6 +7,9 @@ services:
       POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
+    volumes:
+      - ./test_app_migrations:/docker-entrypoint-initdb.d
+
   # NOTE: host networking only works on Linux
   # postgres-rathole-client:
   #   restart: unless-stopped
