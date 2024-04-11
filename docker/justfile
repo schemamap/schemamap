@@ -11,7 +11,14 @@ prep-build:
   done
 
 build: prep-build
-  docker build . -t schemamap/docker:latest
+  docker build . -t schemamap/postgres:latest -t schemamap/postgres:16.2
+
+login:
+  docker login -u schemamap
+
+push:
+  docker push schemamap/postgres:16.2
+  docker push schemamap/postgres:latest
 
 up: prep-build
   docker-compose up --build
