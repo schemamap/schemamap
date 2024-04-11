@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  postgres:
+    build: .
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+  # NOTE: host networking only works on Linux
+  # postgres-rathole-client:
+  #   restart: unless-stopped
+  #   image: rapiz1/rathole:v0.5.0
+  #   command: ["-c", "/app/client.toml"]
+  #   network_mode: host
+  #   ports:
+  #     - 2333:2333  # for rathole communication
+  #   volumes:
+  #     - ./client.toml:/app/client.toml

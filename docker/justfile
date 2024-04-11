@@ -1,0 +1,20 @@
+default:
+  @just --list
+
+prep-build:
+  #!/usr/bin/env bash
+  cp ../*.sql .
+
+  for file in ../sql/*; do
+    echo -e "\n\n-- $file\n$(cat $file)" >> create_schemamap_schema.sql
+    echo "" >> create_schemamap_schema.sql
+  done
+
+build: prep-build
+  docker build . -t schemamap/docker:latest
+
+up: prep-build
+  docker-compose up --build
+
+clean:
+  docker-compose rm -f
