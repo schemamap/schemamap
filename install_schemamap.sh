@@ -16,6 +16,7 @@ if ! psql -c 'SELECT 1;' > /dev/null 2>&1; then
     echo "Failed to connect to database. Please export the proper environment variables and run the install script again."
     echo "Example:"
     echo "export PGUSER=$(whoami)"
+    echo "export PGPASSWORD=superuser_password"
     exit 1
 fi
 
