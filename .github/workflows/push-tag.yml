@@ -27,3 +27,4 @@ jobs:
           create_schemamap_users.sql
           create_schemamap_schema.sql
           grant_schemamap_usage.sql
+          install_schemamap.sh
