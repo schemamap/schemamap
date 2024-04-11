@@ -32,5 +32,8 @@ push:
 up: prep-build
   docker-compose up --build
 
+psql:
+  PGPASSWORD=schemamap psql -h 127.0.0.1 -p 5433 -U schemamap postgres
+
 clean:
   docker-compose rm -f

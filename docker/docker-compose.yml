@@ -6,7 +6,8 @@ services:
     environment:
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"
+      # Move port to not conflict with process-compose postgres
+      - "5433:5432"
     volumes:
       - ./test_app_migrations:/docker-entrypoint-initdb.d
 
