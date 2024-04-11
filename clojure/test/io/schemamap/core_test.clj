@@ -132,7 +132,7 @@
                     conn
                     ["select schema_name, table_name, approx_rows, foreign_key_count,
                              round(probability_master_data::numeric, 2) as rounded_probability
-                      from schemamap.master_date_entity_candidates() limit 10;"]))))
+                      from schemamap.master_data_entity_candidates() limit 10;"]))))
           (testing "querying schema metadata overview"
             (is (=
                  {:constraints
