@@ -46,7 +46,7 @@
                               "{\"test\": 42}"]
                              nth-init)})]
             (try
-              (is (= {:session nil} client))
+              (is (= {} client))
               (finally (sut/close! client))))))
       (testing "after SDK initialization the app-db-role can use the DB interface via functions"
         (with-open [conn (jdbc/get-connection app-datasource)]
