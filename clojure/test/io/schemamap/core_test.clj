@@ -42,12 +42,6 @@
                 (sut/init!
                  {:datasource               sm-datasource
                   :application-db-roles     #{app-db-role}
-                  :port-forward-port        sql-port
-                  :port-forward-remote-port 11111
-                  :port-forward-user        (System/getenv "SCHEMAMAP_PORT_FWD_SSH_USERNAME")
-                  ;; TODO: add test for this, set up special testing user
-                  :port-forward-postgres?   false
-
                   :i18n (nth [(io/file "../fixtures/adventureworks_i18n.json")
                               "{\"test\": 42}"]
                              nth-init)})]

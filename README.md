@@ -44,8 +44,7 @@ As your schema evolves (new columns/tables) so do your table-based interfaces, a
     - Write access (to the minimum subset of tables, to import data without writing application layer code)
   - Give access as much or as little, given your security & threat model.
   - Support tenant-scoped roles that guarantee safe access via row-level-security
-- **SSH Port-Forwarding**: Connect your local/Docker Postgres securely for a local-first developer experience.
-  - Provide your SSH public key, and get a personalized connection/port, that only you can access.
+- **TCP Port-Forwarding**: Connect your local/Docker Postgres securely for a local-first developer experience.
   - No need to setup firewall rules/Ngrok/bastion hosts to try out the feature-set.
   - Use with local mock/seed data or with an empty DB.
   - Get setup/usage help interactively from the app, while coding along in your favorite SQL client/psql.

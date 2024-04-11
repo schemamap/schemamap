@@ -8,7 +8,7 @@ Make sure the runtime dependency binaries are on your `PATH`:
 
 ```
 psql
-ssh
+rathole # https://github.com/rapiz1/rathole
 ```
 
 Add `schemamap.sh` to your `PATH`.
