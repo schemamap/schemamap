@@ -1,3 +1,4 @@
 *
 !*.sql
 !init_schemamap.sh
+!port-fwd-postgres.sh
