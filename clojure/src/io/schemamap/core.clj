@@ -15,23 +15,6 @@
       (load)
       (migrate)))
 
-(defn start-ssh-forwarding!
-  [agent {:keys [host username local-port remote-port
-                 connect-timeout]
-          :or   {connect-timeout 5000}}]
-  (let [ssh-service-port 22 #_2222
-        session          ((requiring-resolve 'clj-ssh.ssh/session)
-                          agent host {:port                     ssh-service-port
-                                      :username                 username
-                                      :strict-host-key-checking :no})]
-    (log/infof "Trying connecting to %s@%s:%s" username host ssh-service-port)
-    ((requiring-resolve 'clj-ssh.ssh/connect) session connect-timeout)
-    (log/infof "Connected to %s@%s:%s" username host ssh-service-port)
-
-    (log/infof "Forwarding local port %s to remote port %s" local-port remote-port)
-    ((requiring-resolve 'clj-ssh.ssh/forward-remote-port) session remote-port local-port)
-    session))
-
 (defn read-i18n-string!
   ^String [input]
   (cond
@@ -70,27 +53,6 @@
       (log/info "Overriding schemamap.i18n() value")
       (jdbc/execute! conn ["select schemamap.update_i18n(?::jsonb)" (read-i18n-string! i18n)]))))
 
-(defn maybe-ssh-port-forward-postgres!
-  [{:keys [port-forward-host
-           port-forward-remote-port
-           port-forward-port
-           port-forward-user
-           port-forward-postgres?]
-    :or   {port-forward-postgres? false
-           port-forward-host      "pgtunnel.eu.schemamap.io"}}]
-  (if (and port-forward-remote-port port-forward-postgres?)
-    (do
-      (log/info "Starting Postgres SSH port forwarding to" port-forward-host)
-      (let [ssh-agent  ((requiring-resolve 'clj-ssh.ssh/ssh-agent) {:use-system-ssh-agent true})
-            local-port port-forward-port]
-        (start-ssh-forwarding!
-         ssh-agent
-         {:host        port-forward-host
-          :username    port-forward-user
-          :local-port  local-port
-          :remote-port port-forward-remote-port})))
-    (log/debug "Skipping Postgres SSH port forwarding")))
-
 (defn init!
   [{:keys [^DataSource datasource
            i18n
@@ -107,26 +69,8 @@
 
   (alter-schemamap-schema! params)
 
-  {:session (maybe-ssh-port-forward-postgres! params)})
+  {})
 
 ;; TODO: implement java.io.Closeable to allow `with-open` macro usage
-(defn close! [{:keys [session]}]
-  (when session
-    (.disconnect session)))
-
-(comment
-  (do
-    (require '[clj-ssh.ssh :as ssh])
-    (def ssh-agent (ssh/ssh-agent {:use-system-ssh-agent true}))
-    (.getIdentityNames ssh-agent))
-
-  (def session
-    (start-ssh-forwarding!
-     ssh-agent
-     {:host            "pgtunnel.eu.schemamap.io"
-      :username        "pgtunnel_schemamap_krisz"
-      :local-port      5437
-      :remote-port     11111
-      :connect-timeout 2000}))
-
-  (.disconnect session))
+(defn close! [m]
+  m)

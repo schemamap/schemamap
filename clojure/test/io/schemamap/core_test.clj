@@ -42,17 +42,11 @@
                 (sut/init!
                  {:datasource               sm-datasource
                   :application-db-roles     #{app-db-role}
-                  :port-forward-port        sql-port
-                  :port-forward-remote-port 11111
-                  :port-forward-user        (System/getenv "SCHEMAMAP_PORT_FWD_SSH_USERNAME")
-                  ;; TODO: add test for this, set up special testing user
-                  :port-forward-postgres?   false
-
                   :i18n (nth [(io/file "../fixtures/adventureworks_i18n.json")
                               "{\"test\": 42}"]
                              nth-init)})]
             (try
-              (is (= {:session nil} client))
+              (is (= {} client))
               (finally (sut/close! client))))))
       (testing "after SDK initialization the app-db-role can use the DB interface via functions"
         (with-open [conn (jdbc/get-connection app-datasource)]
@@ -138,7 +132,7 @@
                     conn
                     ["select schema_name, table_name, approx_rows, foreign_key_count,
                              round(probability_master_data::numeric, 2) as rounded_probability
-                      from schemamap.master_date_entity_candidates() limit 10;"]))))
+                      from schemamap.master_data_entity_candidates() limit 10;"]))))
           (testing "querying schema metadata overview"
             (is (=
                  {:constraints

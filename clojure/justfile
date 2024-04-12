@@ -9,7 +9,11 @@ test:
 build:
     clojure -T:build jar
 
-release: build
+# Run CI pipeline and build a jar
+ci:
+    clojure -T:build ci
+
+release: ci
     clojure -T:build deploy
 
 # Clean build artifacts

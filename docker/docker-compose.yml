@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  postgres:
+    build: .
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      # Move port to not conflict with process-compose postgres
+      - "5433:5432"
+    volumes:
+      - ./test_app_migrations:/docker-entrypoint-initdb.d
+
+  # NOTE: host networking only works on Linux
+  # postgres-rathole-client:
+  #   restart: unless-stopped
+  #   image: rapiz1/rathole:v0.5.0
+  #   command: ["-c", "/app/client.toml"]
+  #   network_mode: host
+  #   ports:
+  #     - 2333:2333  # for rathole communication
+  #   volumes:
+  #     - ./client.toml:/app/client.toml
