@@ -23,7 +23,8 @@ fi
 echo
 echo "Creating Schemamap.io users in $PGDATABASE"
 echo "grant connect, create on database $PGDATABASE to schemamap;" >> ./create_schemamap_users.sql
-psql -1 -f ./create_schemamap_users.sql
+# NOTE: not running in a transaction (-1), so install script is idempotent in case of failures
+psql -f ./create_schemamap_users.sql
 
 echo
 echo "Installing 'schemamap' schema to $PGDATABASE"
