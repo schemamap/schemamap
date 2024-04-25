@@ -1,6 +1,5 @@
 FROM alpine:3.19 as rathole-downloader
 
-RUN echo $(uname -m)
 # Add rathole static binary to path
 RUN file=$(case "$(uname -m)" in \
       "aarch64") echo "rathole-aarch64-unknown-linux-musl.zip";; \
