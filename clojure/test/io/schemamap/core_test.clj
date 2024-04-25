@@ -40,11 +40,11 @@
         (dotimes [nth-init 2]
           (let [client
                 (sut/init!
-                 {:datasource               sm-datasource
-                  :application-db-roles     #{app-db-role}
-                  :i18n (nth [(io/file "../fixtures/adventureworks_i18n.json")
-                              "{\"test\": 42}"]
-                             nth-init)})]
+                 {:datasource           sm-datasource
+                  :application-db-roles #{app-db-role}
+                  :i18n                 (nth [(io/file "../fixtures/adventureworks_i18n.json")
+                                              "{\"test\": 42}"]
+                                             nth-init)})]
             (try
               (is (= {} client))
               (finally (sut/close! client))))))
@@ -149,7 +149,8 @@
                   :indexes           [{:name "document_rowguid_key", :is_unique true}],
                   :column_name       "rowguid",
                   :table_name        "document",
-                  :default_value     "uuid_generate_v1()"}
+                  :default_value     "uuid_generate_v1()"
+                  :attnum            11}
                  (jdbc/execute-one!
                   conn
                   ["select *
