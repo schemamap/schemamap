@@ -10,6 +10,7 @@ pkgs.rustPlatform.buildRustPackage {
   buildInputs = pkgs.lib.optionals pkgs.stdenv.isDarwin (with pkgs.darwin.apple_sdk; [
     frameworks.Security
     frameworks.CoreFoundation
+    frameworks.CoreServices
     frameworks.SystemConfiguration
   ]);
 
