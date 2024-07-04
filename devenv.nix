@@ -25,11 +25,12 @@ in {
     java.enable = true;
     rust = {
       enable = true;
-
       components = [ "rustc" "cargo" "clippy" "rustfmt" "rust-analyzer" ];
     };
-
   };
+
+  # For stacktraces when things go wrong
+  env.RUST_BACKTRACE = "1";
 
   process.implementation = "process-compose";
 
@@ -46,18 +47,6 @@ in {
         create user schemamap_test with password 'schemamap_test';
         grant all privileges on database schemamap_test to postgres;
         alter database schemamap_test owner to schemamap_test;
-
-        create role schemamap with
-          login
-          nosuperuser
-          nocreatedb
-          nocreaterole
-          noinherit
-          noreplication
-          connection limit 5
-          encrypted password 'schemamap';
-
-        grant connect, create on database schemamap_test to schemamap;
       '';
 
       listen_addresses = "127.0.0.1,localhost";
@@ -95,9 +84,6 @@ in {
         depends_on.postgres.condition = "process_healthy";
       };
     };
-
-    # override CWD of bash devenv process so it runs in the correct folder
-    schemamap-cli.process-compose.working_dir = "bash";
   };
 
   scripts = {

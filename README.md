@@ -55,9 +55,9 @@ Integrate `schemamap` seamlessly with language-specific SDKs.
 
 Currently supported:
 
-- **[Bash](./bash)**
-- **[Clojure](./clojure)**:
-  [![Clojars Project](https://img.shields.io/clojars/v/io.schemamap/schemamap-clj.svg)](https://clojars.org/io.schemamap/schemamap-clj)
+- **[CLI (Rust)](./rust)**
+- **[Clojure (library)](./clojure)**:
+[![Clojars Project](https://img.shields.io/clojars/v/io.schemamap/schemamap-clj.svg)](https://clojars.org/io.schemamap/schemamap-clj)
 
 _Watch out for more languages coming soon! Have a request? [Open an issue](https://github.com/schemamap/schemamap/issues/new)._
 

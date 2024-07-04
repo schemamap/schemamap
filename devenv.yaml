@@ -13,5 +13,3 @@ inputs:
     inputs:
       nixpkgs:
         follows: nixpkgs
-imports:
-  - ./bash
