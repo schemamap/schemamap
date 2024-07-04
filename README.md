@@ -87,6 +87,12 @@ We'll get back to you ASAP and work with you to confirm and plan a fix for the i
 
 Please note that we do not currently offer a bug bounty program.
 
+## Acknowledgements
+
+This software uses the following third-party libraries:
+
+- [Rathole](https://github.com/rapiz1/rathole) licensed under Apache-2.0. See [LICENSES/rathole.txt](LICENSES/rathole.txt).
+
 ## License
 Copyright © 2023-2024 Schemamap.io Kft.
 
