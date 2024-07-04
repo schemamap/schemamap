@@ -1,0 +1,18 @@
+[package]
+name = "schemamap"
+version = "0.3.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "4.0", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+tokio-postgres = "0.7"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+dotenv = "0.15"
+log = "0.4"
+pretty_env_logger = "0.4"
+rathole = "0.5.0"

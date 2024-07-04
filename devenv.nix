@@ -13,11 +13,21 @@ in {
     just
     zstd
     (pkgs.callPackage ./devenv/create-flyway-migration.nix { })
-  ];
+  ] ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs.darwin.apple_sdk; [
+    frameworks.Security
+    frameworks.CoreFoundation
+    frameworks.SystemConfiguration
+  ]);
 
   languages = {
     clojure.enable = true;
     java.enable = true;
+    rust = {
+      enable = true;
+
+      components = [ "rustc" "cargo" "clippy" "rustfmt" "rust-analyzer" ];
+    };
+
   };
 
   process.implementation = "process-compose";
@@ -108,6 +118,11 @@ in {
       entry = "${pkgs.cljfmt}/bin/cljfmt fix";
       types_or = [ "clojure" "clojurescript" "edn" ];
     };
+    # TODO: figure out subfolder-baed formatting properly
+    # rustfmt = {
+    #   enable = true;
+    #   entry = lib.mkForce "${pkgs.rustfmt}/bin/cargo-fmt fmt -- --check --manifest-path rust/Cargo.toml";
+    # };
     actionlint.enable = false; # for .github/workflows
     editorconfig-checker = {
       enable = true;
