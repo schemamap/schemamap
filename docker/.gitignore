@@ -1,2 +1,3 @@
 *.sql
 !test_app_migrations/*.sql
+rust

@@ -5,4 +5,4 @@
 
 read -rd "" stdin
 echo "$stdin" > /schemamap/last-rathole-config.toml
-exec rathole -c /schemamap/last-rathole-config.toml
+exec schemamap up -f /schemamap/last-rathole-config.toml
