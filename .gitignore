@@ -18,6 +18,9 @@ pom.xml.asc
 devenv.local.nix
 process-compose.yml
 
+# Nix
+**/result
+
 # direnv
 .direnv
 
