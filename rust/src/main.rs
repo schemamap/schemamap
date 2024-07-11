@@ -24,6 +24,7 @@ struct Cli {
 enum Commands {
     Init(InitArgs),
     Up(UpArgs),
+    Doctor(DoctorArgs),
 }
 
 // Closely simulating psql cli arguments
@@ -46,6 +47,9 @@ struct UpArgs {
     )]
     file: Option<PathBuf>,
 }
+
+#[derive(Parser, Debug, Default, Clone)]
+struct DoctorArgs {}
 
 fn fallback_rathole_file_path() -> PathBuf {
     let path = directories::ProjectDirs::from("io", "schemamap", "schemamap-cli")
@@ -131,6 +135,11 @@ async fn init(args: InitArgs) -> Result<()> {
     Ok(())
 }
 
+async fn doctor(_args: DoctorArgs) -> Result<()> {
+    // Similar to doom doctor
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -139,5 +148,6 @@ async fn main() -> Result<()> {
     match cli.command {
         Commands::Init(args) => init(args).await,
         Commands::Up(args) => up(args).await,
+        Commands::Doctor(args) => doctor(args).await,
     }
 }
