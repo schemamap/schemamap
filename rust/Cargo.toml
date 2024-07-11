@@ -24,4 +24,5 @@ dialoguer = "0.11.0"
 console = "0.15.8"
 indicatif = "0.17.8"
 url_open = "0.0.2"
+whoami = "1.5.1"
 
