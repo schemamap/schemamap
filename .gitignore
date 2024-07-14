@@ -29,3 +29,10 @@ process-compose.yml
 
 # direnv
 .envrc.private
+
+# Rust CLI, needed to minimize Flake copy to store
+rust/.DS_Store
+rust/.idea
+rust/*.log
+rust/tmp/
+rust/target

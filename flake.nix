@@ -20,5 +20,11 @@
           default = self.packages.${system}.schemamap;
           schemamap = mkPackage pkgs;
         });
+
+      modules = [ ./schemamap.devenv.nix ];
+
+      overlays.default = final: prev: {
+        schemamap = self.packages.${prev.system}.schemamap;
+      };
     };
 }

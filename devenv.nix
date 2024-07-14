@@ -1,7 +1,10 @@
-{ pkgs, config, lib, ... }:
+{ pkgs, config, lib, inputs, ... }:
 
 let postgres = pkgs.postgresql_15;
 in {
+  # TODO: remove once upstreamed to devenv.sh + nixpkgs
+  imports = [ ./schemamap.devenv.nix ];
+
   packages = with pkgs; [
     flyway.out
     shellcheck
@@ -35,6 +38,12 @@ in {
   process.implementation = "process-compose";
 
   services = {
+    schemamap = {
+      enable = true;
+      # NOTE: this requires a working Rust CLI on each commit
+      package = pkgs.callPackage ./package.nix { version = "DEV"; };
+    };
+
     # https://devenv.sh/reference/options/#servicespostgresenable
     postgres = {
       enable = true;
