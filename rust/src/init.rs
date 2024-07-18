@@ -75,10 +75,13 @@ pub(crate) fn initialize_pgconfig(args: InitArgs, interactive: bool) -> tokio_po
         })
         .collect();
 
+    let password = std::str::from_utf8(pgconfig.get_password().unwrap_or_default())
+        .unwrap_or_else(|_| "<NONE>");
+
     log::info!(
         "Using connection string: postgres://{}:{}@{}:{}/{}",
         pgconfig.get_user().unwrap(),
-        std::str::from_utf8(pgconfig.get_password().unwrap()).unwrap(),
+        password,
         hosts.join(","),
         pgconfig.get_ports().iter().next().unwrap_or(&5432),
         pgconfig.get_dbname().unwrap()
