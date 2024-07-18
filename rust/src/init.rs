@@ -30,26 +30,25 @@ pub struct InitArgs {
     port: Option<u16>,
 
     #[arg(
-        short,
         long,
         help = "Ask for inputs if not provided",
-        default_value_t = true
+        default_missing_value = "true",
+        num_args =0..=1
     )]
-    input: bool,
+    input: Option<bool>,
 
-    #[arg(
-        long,
-        help = "Install development-time extensions, like snapshotting",
-        default_value_t = true
-    )]
-    dev: bool,
+    #[arg(long, help = "Install development-time extensions, like snapshotting",
+    default_missing_value = "true",
+    num_args =0..=1)]
+    dev: Option<bool>,
 
     #[arg(
         long,
         help = "Emit SQL statements without executing them",
-        default_value_t = false
-    )]
-    pub(crate) dry_run: bool,
+        default_missing_value = "false",
+        num_args =0..=1
+      )]
+    pub(crate) dry_run: Option<bool>,
 }
 
 pub(crate) fn initialize_pgconfig(args: InitArgs, interactive: bool) -> tokio_postgres::Config {
@@ -170,27 +169,32 @@ pub async fn grant_schemamap_usage(client: &Option<Client>) -> Result<()> {
 
 pub async fn install_dev_extensions(client: &Option<Client>) -> Result<()> {
     // TODO: get from SQL files like the other constants
-    const INSTALL_DEV_EXTENSIONS_SQL: &str = "CREATE DATABASE schemamap_dev;";
+    const RESET_ROLE_SQL: &str = "RESET ROLE;";
+    const CREATE_DEV_DATABASE_SQL: &str = "CREATE DATABASE schemamap_dev;";
 
-    if let Some(c) = client {
-        let _ = c
-            .batch_execute(INSTALL_DEV_EXTENSIONS_SQL)
-            .await
-            .inspect_err(|e| log::warn!("Failed to install dev extensions: {}", e));
-    } else {
-        println!("{}", INSTALL_DEV_EXTENSIONS_SQL);
+    // Have to submit separately otherwise the commands run in a transaction context
+    // which is not allowed for CREATE DATABASE.
+    for sql in [RESET_ROLE_SQL, CREATE_DEV_DATABASE_SQL].iter() {
+        if let Some(c) = client {
+            let _ = c
+                .batch_execute(sql)
+                .await
+                .inspect_err(|e| log::warn!("Failed to install dev extensions: {}", e));
+        } else {
+            println!("{}", sql);
+        }
     }
     Ok(())
 }
 
 pub async fn init(args: InitArgs) -> Result<()> {
-    let dry_run = args.dry_run;
+    let dry_run = args.dry_run.unwrap_or(false);
 
     log::info!("Initializing Schemamap.io Postgres SDK idempotently");
 
-    let dev = args.dev;
+    let dev = args.dev.unwrap_or(true);
     // No reason to prompt for input if not interactive/TTY
-    let interactive = atty::is(atty::Stream::Stdout) && args.input;
+    let interactive = atty::is(atty::Stream::Stdout) && args.input.unwrap_or(true);
 
     let pgconfig = initialize_pgconfig(args, interactive);
 

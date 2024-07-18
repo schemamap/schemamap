@@ -55,7 +55,7 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     let dry_run = match cli.command {
-        Commands::Init(ref args) => args.dry_run,
+        Commands::Init(ref args) => args.dry_run.unwrap_or(false),
         Commands::Up(_) => false,
         Commands::Doctor(_) => false,
     };

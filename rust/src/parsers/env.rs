@@ -8,7 +8,13 @@ pub(crate) fn config_from_env() -> Result<Config, anyhow::Error> {
     log::debug!("Parsing DATABASE_URL");
 
     let database_config = match env::var("DATABASE_URL") {
-        Ok(url) => Ok(url.parse::<Config>()?),
+        Ok(url) => {
+            if url.is_empty() {
+                Err(())
+            } else {
+                Ok(url.parse::<Config>()?)
+            }
+        }
         Err(_) => Err(()),
     };
 
@@ -47,6 +53,9 @@ mod tests {
 
     #[test]
     fn test_config_from_env() {
+        // Setting this empty so it surronding cargo test env vars don't interfere with the below tests
+        env::set_var("DATABASE_URL", "");
+
         env::set_var("PGHOST", "localhost");
         env::set_var("PGPORT", "5432");
         env::set_var("PGUSER", "user");
