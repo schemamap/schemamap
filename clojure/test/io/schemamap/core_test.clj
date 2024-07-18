@@ -4,7 +4,7 @@
             [next.jdbc :as jdbc]
             io.schemamap.test-util ;; loading for side-effects
             [clojure.test :refer :all]
-            [clojure.java.io :as io]
+            #_[clojure.java.io :as io]
             [next.jdbc.result-set :as jdbc.rs]))
 
 (deftest valid-pg-role-name?
@@ -17,37 +17,38 @@
     nil                              false))
 
 (deftest integration
-  (let [app-db-role "schemamap_test"
+  (let [#_#__app-db-role "schemamap_test"
         sql-port    5432
         db-opts     {:adapter       "postgresql"
                      :database-name "schemamap_test"
                      :server-name   "127.0.0.1"
                      :port-number   sql-port}]
-    (with-open [sm-datasource  (-> db-opts
-                                   (assoc
-                                    :username     "schemamap"
-                                    :password     "schemamap"
-                                    :minimum-idle 1
-                                    :maximum-pool-size 2)
-                                   (hikari/make-datasource))
+    (with-open [#_#_sm-datasource  (-> db-opts
+                                       (assoc
+                                        :username     "schemamap"
+                                        :password     "schemamap"
+                                        :minimum-idle 1
+                                        :maximum-pool-size 2)
+                                       (hikari/make-datasource))
                 app-datasource (-> db-opts
                                    (assoc
                                     :username     "schemamap_test"
                                     :password     "schemamap_test"
                                     :maximum-pool-size 5)
                                    (hikari/make-datasource))]
-      (testing "SDK can be initialized, repeatedly"
-        (dotimes [nth-init 2]
-          (let [client
-                (sut/init!
-                 {:datasource           sm-datasource
-                  :application-db-roles #{app-db-role}
-                  :i18n                 (nth [(io/file "../fixtures/adventureworks_i18n.json")
-                                              "{\"test\": 42}"]
-                                             nth-init)})]
-            (try
-              (is (= {} client))
-              (finally (sut/close! client))))))
+      ;; NOTE: this is handled via devenv.nix integration, without Flyway dependency at all
+      #_(testing "SDK can be initialized, repeatedly"
+          (dotimes [nth-init 2]
+            (let [client
+                  (sut/init!
+                   {:datasource           sm-datasource
+                    :application-db-roles #{app-db-role}
+                    :i18n                 (nth [(io/file "../fixtures/adventureworks_i18n.json")
+                                                "{\"test\": 42}"]
+                                               nth-init)})]
+              (try
+                (is (= {} client))
+                (finally (sut/close! client))))))
       (testing "after SDK initialization the app-db-role can use the DB interface via functions"
         (with-open [conn (jdbc/get-connection app-datasource)]
           (testing "i18n value can be fetched"
