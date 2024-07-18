@@ -51,7 +51,9 @@
                 (finally (sut/close! client))))))
       (testing "after SDK initialization the app-db-role can use the DB interface via functions"
         (with-open [conn (jdbc/get-connection app-datasource)]
+          (jdbc/execute! conn ["select schemamap.update_schema_metadata_overview();"])
           (testing "i18n value can be fetched"
+            (jdbc/execute! conn ["select schemamap.update_i18n(?::jsonb)" (sut/read-i18n-string! "{\"test\": 42}")])
             (is (= {:test 42}
                    (-> conn
                        (jdbc/execute-one!
