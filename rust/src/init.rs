@@ -29,11 +29,20 @@ pub struct InitArgs {
     #[arg(short, long, value_name = "PORT", help = "PG database port")]
     port: Option<u16>,
 
-    #[arg(short, long, help = "Ask for inputs if not provided")]
-    input: Option<bool>,
+    #[arg(
+        short,
+        long,
+        help = "Ask for inputs if not provided",
+        default_value_t = true
+    )]
+    input: bool,
 
-    #[arg(long, help = "Install development-time extensions, like snapshotting")]
-    dev: Option<bool>,
+    #[arg(
+        long,
+        help = "Install development-time extensions, like snapshotting",
+        default_value_t = true
+    )]
+    dev: bool,
 
     #[arg(
         long,
@@ -176,8 +185,9 @@ pub async fn init(args: InitArgs) -> Result<()> {
 
     log::info!("Initializing Schemamap.io Postgres SDK idempotently");
 
-    let dev = args.dev.unwrap_or(true);
-    let interactive = args.input.unwrap_or(true);
+    let dev = args.dev;
+    // No reason to prompt for input if not interactive/TTY
+    let interactive = atty::is(atty::Stream::Stdout) && args.input;
 
     let pgconfig = initialize_pgconfig(args, interactive);
 
