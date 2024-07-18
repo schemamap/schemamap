@@ -1,18 +1,7 @@
 default:
   @just --list
 
-prep-build:
-  #!/usr/bin/env bash
-  cp ../*.sql .
-
-  for file in ../sql/*; do
-    echo -e "\n\n-- $file\n$(cat $file)" >> create_schemamap_schema.sql
-    echo "" >> create_schemamap_schema.sql
-  done
-
-  cp -R ../rust rust
-
-build: prep-build
+build:
   docker build . \
     -t schemamap/postgres:latest \
     -t schemamap/postgres:16.2 \
@@ -24,7 +13,7 @@ buildx-setup:
   docker buildx install
 
 # Builds all common architectures that are supported by the official Postgres image
-buildx-and-push: prep-build
+buildx-and-push:
   docker build --platform linux/amd64,linux/arm64,linux/arm/v7 . \
     -t schemamap/postgres:latest \
     -t schemamap/postgres:16.2 \
@@ -38,11 +27,11 @@ push:
   docker push schemamap/postgres:16.2
   docker push schemamap/postgres:latest
 
-up: prep-build
+up:
   docker-compose up --build
 
 psql:
-  PGPASSWORD=schemamap psql -h 127.0.0.1 -p 5433 -U schemamap postgres
+  PGPASSWORD=postgres psql -h 127.0.0.1 -p 5433 -U postgres postgres
 
 clean:
   docker-compose rm -f

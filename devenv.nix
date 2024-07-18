@@ -39,7 +39,7 @@ in {
 
   services = {
     schemamap = {
-      enable = true;
+      enable = false; # TODO: enable once in nixpkgs
       # NOTE: this requires a working Rust CLI on each commit
       package = pkgs.callPackage ./package.nix { version = "DEV"; };
     };
@@ -93,17 +93,39 @@ in {
         depends_on.postgres.condition = "process_healthy";
       };
     };
+
+    # Needed so postgres can be restarted until the below issue is fixed:
+    # https://github.com/F1bonacc1/process-compose/issues/200
+    sleepy-keepalive.exec = "sleep infinity";
   };
 
   scripts = {
+    recreate-schemamap-schema-sql.exec = ''
+      echo '-- Generated from schemamap.dev' > "$DEVENV_ROOT/rust/create_schemamap_schema.sql"
+      echo -n 'SET search_path TO schemamap;' >> "$DEVENV_ROOT/rust/create_schemamap_schema.sql"
+
+      for file in "$DEVENV_ROOT/sql/*"; do
+        echo -e "\n\n-- $(basename '$file')\n$(cat $file)" >> "$DEVENV_ROOT/rust/create_schemamap_schema.sql"
+        echo "" >> "$DEVENV_ROOT/rust/create_schemamap_schema.sql"
+      done
+    '';
     psql-local.exec = "psql -h 127.0.0.1 -U schemamap_test schemamap_test $@";
     psql-local-smio.exec = "psql -h 127.0.0.1 -U schemamap schemamap_test $@";
-    pgclear.exec = "git clean -xf $PGDATA";
+    pgclear.exec = ''
+      cd "$DEVENV_ROOT"
+      process-compose process stop postgres
+      sleep 1 # blocking versions of above would be nice
+      git clean -xf "$PGDATA"
+      process-compose process start postgres
+      sleep 1 # allow postgres to init & become healthy
+      # process-compose process start seed-postgres
+    '';
     ci-test.exec = "process-compose --tui=false up -f process-compose.yml -f process-compose.test.yml";
   };
 
   enterShell = ''
     ln -sf ${config.process-managers.process-compose.configFile} ${config.env.DEVENV_ROOT}/process-compose.yml
+    export PATH="$DEVENV_ROOT/rust/target/debug:$PATH"
   '';
 
   pre-commit.hooks = {
@@ -128,5 +150,14 @@ in {
     };
     nixpkgs-fmt.enable = true;
     shellcheck.enable = true;
+
+    recreate-schemamap-schema-sql = {
+      enable = true;
+      name = "recreate-schemamap-schema-sql";
+      entry = "recreate-schemamap-schema-sql"; # see scripts section
+      types = [ "sql" ];
+      verbose = true;
+      pass_filenames = false;
+    };
   };
 }

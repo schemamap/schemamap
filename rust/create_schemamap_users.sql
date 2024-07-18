@@ -2,7 +2,7 @@
 do $$
 begin
   if (select rolsuper or rolcreaterole as valid_role from pg_roles where rolname = current_user) is not true then
-    raise exception 'This script must be run by a superuser (usually "postgres" or equivalent).';
+    raise exception 'This script must be run by a superuser (usually "postgres" or $(whoami)).';
   end if;
 end $$;
 

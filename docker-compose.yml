@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     build: .
@@ -9,7 +7,7 @@ services:
       # Move port to not conflict with process-compose postgres
       - "5433:5432"
     volumes:
-      - ./test_app_migrations:/docker-entrypoint-initdb.d
+      - ./docker/test_app_migrations:/docker-entrypoint-initdb.d
 
   # NOTE: host networking only works on Linux
   # postgres-rathole-client:

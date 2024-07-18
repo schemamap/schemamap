@@ -6,6 +6,7 @@ pkgs.rustPlatform.buildRustPackage {
 
   src = pkgs.lib.cleanSource ./rust;
   cargoLock.lockFile = ./rust/Cargo.lock;
+  # cargoHash = "sha256-kxxjBIWUAkZSXP/N5wuJ9h/QGNGRuCMdelUsd/T0tkM=";
 
   buildInputs = [ pkgs.openssl ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin (with pkgs.darwin.apple_sdk; [
     frameworks.Security

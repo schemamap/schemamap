@@ -14,9 +14,12 @@ jobs:
 
     - name: Create create_schemamap_schema.sql
       run: |
+        echo '-- Generated from schemamap.dev' > rust/create_schemamap_schema.sql
+        echo -n 'SET search_path TO schemamap;' >> rust/create_schemamap_schema.sql
+
         for file in sql/*; do
-          echo -e "\n\n-- $file\n$(cat $file)" >> create_schemamap_schema.sql
-          echo "" >> create_schemamap_schema.sql
+          echo -e "\n\n-- $file\n$(cat $file)" >> rust/create_schemamap_schema.sql
+          echo "" >> rust/create_schemamap_schema.sql
         done
 
     - name: Upload Release assets
@@ -24,7 +27,7 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: |
-          create_schemamap_users.sql
-          create_schemamap_schema.sql
-          grant_schemamap_usage.sql
+          rust/create_schemamap_users.sql
+          rust/create_schemamap_schema.sql
+          rust/grant_schemamap_usage.sql
           install_schemamap.sh
