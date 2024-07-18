@@ -1,7 +1,6 @@
 -- Generated from schemamap.dev
 SET search_path TO schemamap;
-
--- $file
+-- V000001__init.sql
 create schema if not exists schemamap;
 
 create or replace function schemamap.list_tenants()
@@ -395,6 +394,8 @@ returns table(tenants_defined boolean, mdes_defined boolean) as $$
     exists(select 1 from schemamap.list_tenants() where tenant_id is not null) as tenants_defined,
     exists(select 1 from schemamap.list_mdes() where mde_name is not null) as mdes_defined
 $$ language sql stable;
+
+-- V000002__data_migrations.sql
 create table schemamap.data_migration_states (
   value text primary key,
   comment text
@@ -452,6 +453,8 @@ comment on table schemamap.data_migrations is
   'Bookeeping table of data migrations/imports that happened to this database.';
 
 select schemamap.add_common_triggers('schemamap.data_migrations');
+
+-- V000003__developer_experience_improvements.sql
 -- fix typo
 alter function master_date_entity_candidates rename to master_data_entity_candidates;
 
@@ -484,6 +487,8 @@ create or replace function schemamap.update_function_definition(function_name te
 returns text as $$
   select schemamap.get_function_definition($1);
 $$ language sql stable;
+
+-- V000004__track_column_order_in_schema_metadata_overview.sql
 drop materialized view schemamap.schema_metadata_overview;
 create materialized view schemamap.schema_metadata_overview as
 with ignored_schemas as (
@@ -582,4 +587,3 @@ left join constraints ct on b.schema_name = ct.schema_name and b.table_name = ct
 left join indexes i on b.schema_name = i.schema_name and b.table_name = i.table_name and c.attnum = any(i.index_keys)
 group by 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
 order by 1, 2, 3;
-

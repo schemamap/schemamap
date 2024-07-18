@@ -100,15 +100,6 @@ in {
   };
 
   scripts = {
-    recreate-schemamap-schema-sql.exec = ''
-      echo '-- Generated from schemamap.dev' > "$DEVENV_ROOT/rust/create_schemamap_schema.sql"
-      echo -n 'SET search_path TO schemamap;' >> "$DEVENV_ROOT/rust/create_schemamap_schema.sql"
-
-      for file in "$DEVENV_ROOT/sql/*"; do
-        echo -e "\n\n-- $(basename '$file')\n$(cat $file)" >> "$DEVENV_ROOT/rust/create_schemamap_schema.sql"
-        echo "" >> "$DEVENV_ROOT/rust/create_schemamap_schema.sql"
-      done
-    '';
     psql-local.exec = "psql -h 127.0.0.1 -U schemamap_test schemamap_test $@";
     psql-local-smio.exec = "psql -h 127.0.0.1 -U schemamap schemamap_test $@";
     pgclear.exec = ''
@@ -125,7 +116,7 @@ in {
 
   enterShell = ''
     ln -sf ${config.process-managers.process-compose.configFile} ${config.env.DEVENV_ROOT}/process-compose.yml
-    export PATH="$DEVENV_ROOT/rust/target/debug:$PATH"
+    export PATH="$DEVENV_ROOT/rust/target/debug:$DEVENV_ROOT/bin:$PATH"
   '';
 
   pre-commit.hooks = {
@@ -154,7 +145,7 @@ in {
     recreate-schemamap-schema-sql = {
       enable = true;
       name = "recreate-schemamap-schema-sql";
-      entry = "recreate-schemamap-schema-sql"; # see scripts section
+      entry = "./bin/recreate-schemamap-schema-sql.sh";
       types = [ "sql" ];
       verbose = true;
       pass_filenames = false;
