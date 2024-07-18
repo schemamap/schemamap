@@ -21,7 +21,7 @@ in
 
     processes = {
       schemamap-init = {
-        exec = "${cfg.package}/bin/schemamap init --dev --input=false";
+        exec = "${cfg.package}/bin/schemamap init --dev=true";
         process-compose = {
           description = "Idempotently initializes the Schemamap.io SDK in the local Postgres DB, with developer-mode extensions.";
           availability.restart = "never";
