@@ -520,7 +520,8 @@
         "devenv": "devenv",
         "fenix": "fenix",
         "nixpkgs": "nixpkgs",
-        "pre-commit-hooks": "pre-commit-hooks_2"
+        "pre-commit-hooks": "pre-commit-hooks_2",
+        "schemamap-stable": "schemamap-stable"
       }
     },
     "rust-analyzer-src": {
@@ -537,6 +538,27 @@
         "owner": "rust-lang",
         "ref": "nightly",
         "repo": "rust-analyzer",
+        "type": "github"
+      }
+    },
+    "schemamap-stable": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1721294511,
+        "narHash": "sha256-WN/fsEZa3FJmxaszIN6AwJF3F6j3Sljh4M/Mlgu3gsQ=",
+        "owner": "schemamap",
+        "repo": "schemamap",
+        "rev": "c7ed135a85c551e9584f72da3721c3573187860c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "schemamap",
+        "repo": "schemamap",
+        "rev": "c7ed135a85c551e9584f72da3721c3573187860c",
         "type": "github"
       }
     },

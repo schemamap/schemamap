@@ -39,9 +39,9 @@ in {
 
   services = {
     schemamap = {
-      enable = false; # TODO: enable once in nixpkgs
-      # NOTE: this requires a working Rust CLI on each commit
-      package = pkgs.callPackage ./package.nix { version = "DEV"; };
+      enable = true;
+      # TODO: remove, once in nixpkgs
+      package = inputs.schemamap-stable.packages.${pkgs.system}.schemamap;
     };
 
     # https://devenv.sh/reference/options/#servicespostgresenable
