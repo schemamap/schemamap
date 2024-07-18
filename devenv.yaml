@@ -8,8 +8,9 @@ inputs:
       nixpkgs:
         follows: nixpkgs
   # used for stable devenv schemamap binary instead of depending on changing local FS
+  # TODO: remove once in nixpkgs
   schemamap-stable:
-    url: github:schemamap/schemamap/c7ed135a85c551e9584f72da3721c3573187860c
+    url: github:schemamap/schemamap/dbc24756d4baca4ea7cd59a51514f26d2b17d49d
     inputs:
       nixpkgs:
         follows: nixpkgs
