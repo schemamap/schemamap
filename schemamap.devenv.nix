@@ -21,7 +21,17 @@ in
 
     processes = {
       schemamap-init = {
-        exec = "${cfg.package}/bin/schemamap init";
+        exec =
+          let
+            dbnames = (map (db: db.name) config.services.postgres.initialDatabases);
+            # Initialize
+            schemamap_commands = lib.concatMapStringsSep "\n"
+              (dbname: ''
+                ${cfg.package}/bin/schemamap init --dbname=${dbname} --username="''${USER:-$(id -nu)}"
+              '')
+              dbnames;
+          in
+          schemamap_commands;
         process-compose = {
           description = "Idempotently initializes the Schemamap.io SDK in the local Postgres DB, with developer-mode extensions.";
           availability.restart = "never";
