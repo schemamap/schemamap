@@ -127,7 +127,7 @@ in {
       entry = "${pkgs.cljfmt}/bin/cljfmt fix";
       types_or = [ "clojure" "clojurescript" "edn" ];
     };
-    # TODO: figure out subfolder-baed formatting properly
+    # TODO: figure out subfolder-based formatting properly
     # rustfmt = {
     #   enable = true;
     #   entry = lib.mkForce "${pkgs.rustfmt}/bin/cargo-fmt fmt -- --check --manifest-path rust/Cargo.toml";
