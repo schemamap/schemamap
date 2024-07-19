@@ -11,6 +11,7 @@ static LOOKING_GLASS: Emoji<'_, '_> = Emoji("🔍 ", "");
 static CHECK: Emoji<'_, '_> = Emoji("✅ ", "");
 static CROSS: Emoji<'_, '_> = Emoji("❌ ", "");
 static LOCK: Emoji<'_, '_> = Emoji("🔒 ", "");
+static WARN: Emoji<'_, '_> = Emoji("⚠️ ", "");
 
 #[derive(Parser, Debug, Default, Clone)]
 pub(crate) struct DoctorArgs {}
@@ -188,7 +189,7 @@ async fn check_if_tunnel_config_exists() -> anyhow::Result<bool> {
     } else {
         println!(
             "{} No tunnel config found, run `schemamap up` to create one.",
-            CROSS
+            WARN
         );
         println!("  This will allow your local DB to receive data migrations from other environments and data sources.")
     }
@@ -196,25 +197,72 @@ async fn check_if_tunnel_config_exists() -> anyhow::Result<bool> {
     Ok(file_exists)
 }
 
+fn indent_lines(text: &str, indent: &str) -> String {
+    text.split("\n")
+        .map(|line| format!("{}{}", indent, line))
+        .collect::<Vec<String>>()
+        .join("\n")
+}
+
 async fn schemamap_verify_installation(client: &tokio_postgres::Client) -> anyhow::Result<bool> {
     let row = client
         .query_one(
-            "SELECT tenants_defined, mdes_defined FROM schemamap.verify_installation();",
+            "SELECT tenants_defined, mdes_defined FROM schemamap.verify_installation()",
             &[],
         )
-        .await?;
+        .await;
+
+    if row.is_err() {
+        println!("{} Failed to fetch installation verification results", WARN);
+        println!("  Error: {}", row.err().unwrap());
+
+        return Ok(false);
+    }
+
+    let row = row.unwrap();
 
     let tenants_defined: bool = row.get("tenants_defined");
     let mdes_defined: bool = row.get("mdes_defined");
 
+    let indent = "  ";
     if !tenants_defined {
-        println!("{} Schemamap tenants not defined", CROSS);
-        // TODO: help message
+        println!("{} Tenants are not defined", WARN);
+        println!("{}{}", indent, "To allow for tenant-aware data migrations, you can teach Schemamap.io how you model your tenants via a SELECT query.");
+        println!();
+        let sample_tenant_listing_definition = r##"select schemamap.update_function_definition('list_tenants', $$
+ select
+    id::text as tenant_id,
+    slug as tenant_short_name,
+    name as tenant_display_name,
+    'en_US' as tenant_locale,
+    jsonb_build_object() as tenant_data -- or: jsonb_build_object('website', website, 'createdAt', created_at)
+from tenants; -- or: organizations/users/etc.
+$$);"##;
+
+        println!("{}", indent_lines(sample_tenant_listing_definition, indent));
+        println!();
     }
 
     if !mdes_defined {
-        println!("{} Schemamap MDEs not defined", CROSS);
-        // TODO: help message
+        println!("{} Master Data Entities (MDEs) not defined", WARN);
+        println!("{}{}", indent, "MDEs make it easy to do data migrations on tables with natural keys (via unique constraints), that belong together.");
+        println!("{}{}", indent, "As an example:");
+        println!();
+
+        let sample_mde_definition = r##"select schemamap.define_master_data_entity('products', $$
+  select p.*
+  from products p
+  left join product_units pu on pu.product_id = p.id and false
+  left join product_settings ps on ps.product_id = p.id and false
+  left join product_categories pc on pc.product_id = p.id and false
+  where p.deleted_at is null -- or any other filtering which makes sense for your domain
+$$);"##;
+        println!("{}", indent_lines(sample_mde_definition, indent));
+        println!();
+
+        println!("{}NOTE: we use `false` in the join conditions to avoid a cartesian product of all tables, mainly for has-many relations.", indent);
+        println!("{}Schemamap.io will analyze your SELECT statement and allow you or anyone on your team to correctly load data into the mentioned tables.", indent);
+        println!();
     }
 
     Ok(tenants_defined && mdes_defined)
@@ -238,19 +286,15 @@ pub(crate) async fn doctor(_args: DoctorArgs) -> anyhow::Result<()> {
         }
     });
 
-    println!(
-        "{} {}Checking Schemamap SDK...",
-        style("[1/4]").bold().dim(),
-        LOOKING_GLASS
-    );
+    println!("{}Checking Schemamap SDK...", LOOKING_GLASS);
 
     check_if_schemamap_schema_exists(&client).await?;
 
     check_schemamap_roles(&client).await?;
 
-    check_if_tunnel_config_exists().await?;
-
     schemamap_verify_installation(&client).await?;
+
+    check_if_tunnel_config_exists().await?;
 
     Ok(())
 }
