@@ -57,14 +57,24 @@ fn read_multiline_string_from_stdin() -> Result<String> {
     Ok(trimmed_input)
 }
 
-pub(crate) async fn up(args: UpArgs) -> Result<()> {
-    let lookup_filepaths: Vec<PathBuf> = vec![args.file.clone()]
-        .into_iter()
-        .chain(fallback_paths().into_iter().map(Some))
-        .filter_map(|p| p.map(|p| p.to_path_buf()))
-        .collect();
+fn lookup_filepaths(extra_paths: &Vec<Option<PathBuf>>) -> Vec<PathBuf> {
+    extra_paths
+        .iter()
+        .chain(
+            fallback_paths()
+                .iter()
+                .map(|p| Some(p.clone()))
+                .collect::<Vec<_>>()
+                .iter(),
+        )
+        .filter_map(|p| p.clone())
+        .collect()
+}
 
-    let first_existing_filepath = lookup_filepaths
+pub(crate) fn find_first_existing_tunnel_config_file(
+    extra_paths: &Vec<Option<PathBuf>>,
+) -> Option<PathBuf> {
+    lookup_filepaths(&extra_paths)
         .iter()
         .find(|p| {
             log::debug!(
@@ -73,9 +83,20 @@ pub(crate) async fn up(args: UpArgs) -> Result<()> {
             );
             p.exists()
         })
+        .cloned()
+}
+
+pub(crate) async fn up(args: UpArgs) -> Result<()> {
+    let extra_paths = vec![args.file.clone()].clone();
+    let first_existing_filepath = find_first_existing_tunnel_config_file(&extra_paths).clone();
+
+    let _ =
+    first_existing_filepath
+    .as_ref()
+
         .ok_or_else(|| {
           log::warn!("Couldn't find a tunnel config file in either of the following locations:");
-          for p in lookup_filepaths.iter() {
+          for p in lookup_filepaths(&extra_paths).iter() {
             log::warn!("  {}", p.to_path_buf().display());
           }
           if atty::is(atty::Stream::Stdout) {

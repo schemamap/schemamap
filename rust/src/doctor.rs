@@ -5,7 +5,7 @@ use clap::Parser;
 use console::{style, Emoji};
 use serde_json::to_string_pretty;
 
-use crate::parsers;
+use crate::{parsers, up};
 
 static LOOKING_GLASS: Emoji<'_, '_> = Emoji("🔍 ", "");
 static CHECK: Emoji<'_, '_> = Emoji("✅ ", "");
@@ -172,6 +172,30 @@ ORDER BY 1;";
     Ok(true)
 }
 
+async fn check_if_tunnel_config_exists() -> anyhow::Result<bool> {
+    let first_existing_filepath = up::find_first_existing_tunnel_config_file(&vec![None]);
+    let file_exists = first_existing_filepath.is_some();
+
+    if file_exists {
+        print_check(
+            format!(
+                "Tunnel config exists at: {}",
+                first_existing_filepath.unwrap().display()
+            )
+            .as_str(),
+            file_exists,
+        );
+    } else {
+        println!(
+            "{} No tunnel config found, run `schemamap up` to create one.",
+            CROSS
+        );
+        println!("  This will allow your local DB to receive data migrations from other environments and data sources.")
+    }
+
+    Ok(file_exists)
+}
+
 // Similar to `doom doctor`
 pub(crate) async fn doctor(_args: DoctorArgs) -> anyhow::Result<()> {
     let pgconfig = parsers::parse_pgconfig(None, None, None, None)?;
@@ -199,6 +223,8 @@ pub(crate) async fn doctor(_args: DoctorArgs) -> anyhow::Result<()> {
     check_if_schemamap_schema_exists(&client).await?;
 
     check_schemamap_roles(&client).await?;
+
+    check_if_tunnel_config_exists().await?;
 
     Ok(())
 }
