@@ -33,20 +33,30 @@ pub struct InitArgs {
         long,
         help = "Ask for inputs if not provided",
         default_missing_value = "true",
-        num_args =0..=1
+        default_value = "true",
+        num_args =0..=1,
+        action = clap::ArgAction::Set,
     )]
     input: Option<bool>,
 
-    #[arg(long, help = "Install development-time extensions, like snapshotting",
-    default_missing_value = "true",
-    num_args =0..=1)]
+    #[arg(long,
+        help = "Install development-time extensions, like snapshotting",
+        default_missing_value = "true",
+        default_value = "true",
+        num_args =0..=1,
+        action = clap::ArgAction::Set
+    )]
     dev: Option<bool>,
 
+    // Until https://github.com/clap-rs/clap/issues/5577 is addressed
+    // have to do this for falsey-by-default flags
     #[arg(
         long,
         help = "Emit SQL statements without executing them",
-        default_missing_value = "false",
-        num_args =0..=1
+        default_missing_value = "true",
+        default_value = "false",
+        num_args =0..=1,
+        action = clap::ArgAction::Set,
       )]
     pub(crate) dry_run: Option<bool>,
 }
