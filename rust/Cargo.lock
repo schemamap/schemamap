@@ -1539,6 +1539,8 @@ dependencies = [
  "bytes",
  "fallible-iterator",
  "postgres-protocol",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1857,6 +1859,7 @@ dependencies = [
  "dirs",
  "dotenv",
  "indicatif",
+ "lazy_static",
  "log",
  "pretty_env_logger",
  "rathole",
