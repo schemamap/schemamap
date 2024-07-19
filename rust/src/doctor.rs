@@ -196,6 +196,30 @@ async fn check_if_tunnel_config_exists() -> anyhow::Result<bool> {
     Ok(file_exists)
 }
 
+async fn schemamap_verify_installation(client: &tokio_postgres::Client) -> anyhow::Result<bool> {
+    let row = client
+        .query_one(
+            "SELECT tenants_defined, mdes_defined FROM schemamap.verify_installation();",
+            &[],
+        )
+        .await?;
+
+    let tenants_defined: bool = row.get("tenants_defined");
+    let mdes_defined: bool = row.get("mdes_defined");
+
+    if !tenants_defined {
+        println!("{} Schemamap tenants not defined", CROSS);
+        // TODO: help message
+    }
+
+    if !mdes_defined {
+        println!("{} Schemamap MDEs not defined", CROSS);
+        // TODO: help message
+    }
+
+    Ok(tenants_defined && mdes_defined)
+}
+
 // Similar to `doom doctor`
 pub(crate) async fn doctor(_args: DoctorArgs) -> anyhow::Result<()> {
     let pgconfig = parsers::parse_pgconfig(None, None, None, None)?;
@@ -225,6 +249,8 @@ pub(crate) async fn doctor(_args: DoctorArgs) -> anyhow::Result<()> {
     check_schemamap_roles(&client).await?;
 
     check_if_tunnel_config_exists().await?;
+
+    schemamap_verify_installation(&client).await?;
 
     Ok(())
 }
