@@ -1,17 +1,158 @@
+# NOTE: as we use rathole internally, which is finicky to compile,
+# this file has written with the help of:
+# https://github.com/rapiz1/rathole/blob/main/.github/workflows/release.yml
+
 name: Create release & SQL assets on tag push
 
 on:
+  # TODO: remove
+  pull_request:
+
   push:
     tags:
       - "v*.*.*"
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: rust
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            exe: schemamap
+            cross: false
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            exe: schemamap
+            cross: false
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            exe: schemamap
+            cross: true
+          - os: ubuntu-latest
+            target: arm-unknown-linux-musleabi
+            exe: schemamap
+            cross: true
+          - os: ubuntu-latest
+            target: arm-unknown-linux-musleabihf
+            exe: schemamap
+            cross: true
+          - os: ubuntu-latest
+            target: armv7-unknown-linux-musleabihf
+            exe: schemamap
+            cross: true
+          - os: ubuntu-latest
+            target: mips-unknown-linux-gnu
+            exe: schemamap
+            cross: true
+          - os: ubuntu-latest
+            target: mips-unknown-linux-musl
+            exe: schemamap
+            cross: true
+          - os: ubuntu-latest
+            target: mipsel-unknown-linux-gnu
+            exe: schemamap
+            cross: true
+          - os: ubuntu-latest
+            target: mipsel-unknown-linux-musl
+            exe: schemamap
+            cross: true
+          - os: ubuntu-latest
+            target: mips64-unknown-linux-gnuabi64
+            exe: schemamap
+            cross: true
+          - os: ubuntu-latest
+            target: mips64el-unknown-linux-gnuabi64
+            exe: schemamap
+            cross: true
+
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            exe: schemamap
+            cross: false
+
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            exe: schemamap
+            cross: false
+
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            exe: schemamap.exe
+            cross: false
 
     steps:
     - uses: actions/checkout@v3
+    - uses: dtolnay/rust-toolchain@stable
 
+    - name: Install OpenSSL
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt-get install pkg-config libssl-dev
+    - name: Install OpenSSL
+      if: matrix.os == 'macos-latest'
+      run: brew install openssl@3
+
+    # Native build
+    - name: Install target
+      if: matrix.cross == false
+      run: rustup target add ${{ matrix.target }}
+    - name: Run tests
+      if: matrix.cross == false
+      run: cargo test --release --target ${{ matrix.target }} --verbose
+    - name: Build release
+      if: matrix.cross == false
+      run: cargo build --release --target ${{ matrix.target }}
+
+    # Cross build
+    - name: Install cross
+      if: matrix.cross
+      run: cargo install --version 0.2.5 cross
+    - name: Run tests
+      if: matrix.cross
+      run: cross test --release --target ${{ matrix.target }} --verbose --features embedded --no-default-features
+    - name: Build release
+      if: matrix.cross
+      run: cross build --release --target ${{ matrix.target }} --features embedded --no-default-features
+
+    - name: Run UPX
+      # Upx may not support some platforms. Ignore the errors
+      continue-on-error: true
+      # Disable upx for mips. See https://github.com/upx/upx/issues/387
+      if: matrix.os == 'ubuntu-latest' && !contains(matrix.target, 'mips')
+      uses: crazy-max/ghaction-upx@v1
+      with:
+        version: v4.0.2
+        files: target/${{ matrix.target }}/release/${{ matrix.exe }}
+        args: -q --best --lzma
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: schemamap-${{ matrix.target }}
+        path: target/${{ matrix.target }}/release/${{ matrix.exe }}
+    - name: Zip Release
+      uses: TheDoctor0/zip-release@0.6.1
+      with:
+        type: zip
+        filename: schemamap-${{ matrix.target }}.zip
+        directory: target/${{ matrix.target }}/release/
+        path: ${{ matrix.exe }}
+    - name: Publish
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: target/${{ matrix.target }}/release/schemamap-${{ matrix.target }}.zip
+        generate_release_notes: true
+        draft: true
+
+
+  # Only needed to be done once => separate job
+  push-release-assets:
+    runs-on: ubuntu-latest
+    steps:
     - name: Upload Release assets
       uses: softprops/action-gh-release@v0.1.15
       if: startsWith(github.ref, 'refs/tags/')
