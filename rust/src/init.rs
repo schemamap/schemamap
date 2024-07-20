@@ -80,6 +80,7 @@ pub(crate) fn initialize_pgconfig(args: InitArgs, interactive: bool) -> tokio_po
         .iter()
         .map(|h| match h {
             Host::Tcp(host) => host.to_string(),
+            #[cfg(unix)]
             Host::Unix(path) => path.to_str().unwrap().to_string(),
         })
         .collect();
