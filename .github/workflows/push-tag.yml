@@ -126,25 +126,25 @@ jobs:
       uses: crazy-max/ghaction-upx@v1
       with:
         version: v4.0.2
-        files: target/${{ matrix.target }}/release/${{ matrix.exe }}
+        files: rust/target/${{ matrix.target }}/release/${{ matrix.exe }}
         args: -q --best --lzma
 
     - uses: actions/upload-artifact@v2
       with:
         name: schemamap-${{ matrix.target }}
-        path: target/${{ matrix.target }}/release/${{ matrix.exe }}
+        path: rust/target/${{ matrix.target }}/release/${{ matrix.exe }}
     - name: Zip Release
       uses: TheDoctor0/zip-release@0.6.1
       with:
         type: zip
         filename: schemamap-${{ matrix.target }}.zip
-        directory: target/${{ matrix.target }}/release/
+        directory: rust/target/${{ matrix.target }}/release/
         path: ${{ matrix.exe }}
     - name: Publish
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        files: target/${{ matrix.target }}/release/schemamap-${{ matrix.target }}.zip
+        files: rust/target/${{ matrix.target }}/release/schemamap-${{ matrix.target }}.zip
         generate_release_notes: true
         draft: true
 
