@@ -113,10 +113,10 @@ jobs:
       run: cargo install --version 0.2.5 cross
     - name: Run tests
       if: matrix.cross
-      run: cross test --release --target ${{ matrix.target }} --verbose --features embedded --no-default-features
+      run: cross test --release --target ${{ matrix.target }} --verbose --no-default-features
     - name: Build release
       if: matrix.cross
-      run: cross build --release --target ${{ matrix.target }} --features embedded --no-default-features
+      run: cross build --release --target ${{ matrix.target }} --no-default-features
 
     - name: Run UPX
       # Upx may not support some platforms. Ignore the errors
