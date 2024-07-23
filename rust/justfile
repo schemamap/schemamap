@@ -1,0 +1,39 @@
+default:
+  @just --list
+
+build:
+  cargo build
+
+# integrations tests whole CLI interface, assumes process-compose is running
+test:
+  #!/usr/bin/env bash
+  set -eo pipefail
+
+  cargo test # fail-fast if unit tests fail
+
+  cargo build
+
+  export PATH="$PATH:./target/debug"
+
+  pgclear
+
+  # Simulating CI/hands-free use-case
+  export DATABASE_URL="postgresql://$(whoami)@localhost:5432/schemamap_test"
+
+  # Checking help out visually
+  schemamap --help
+
+  echo "Initializing with $DATABASE_URL"
+  schemamap init --input=false --conn="$DATABASE_URL"
+
+  echo "Checking reinit with Unix socket"
+  export DATABASE_URL="postgresql://$(whoami)@$(echo -n $PGDATA | jq -sRr @uri)/schemamap_test"
+
+  echo "Reinitializing to test idempotency with: $DATABASE_URL"
+  schemamap init --input=false #--conn="$DATABASE_URL"
+
+  echo 'Dry-run SQL lines:'
+  schemamap init --dry-run | wc -l
+
+  echo "Running schemamap doctor"
+  schemamap doctor

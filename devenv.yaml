@@ -1,14 +1,31 @@
 allowUnfree: true
 inputs:
   nixpkgs:
-    # TODO: update to some channel once it's released
-    # fixes MacOS cljfmt build: https://github.com/NixOS/nixpkgs/pull/269479
-    url: github:NixOS/nixpkgs/ddf0003c57fb5cbb4a9754f2f6d5ebe9cdae5151
+    url: nixpkgs/nixos-24.05
   devenv:
     url: github:cachix/devenv
+    inputs:
+      nixpkgs:
+        follows: nixpkgs
+  # used for stable devenv schemamap binary instead of depending on changing local FS
+  # TODO: remove once in nixpkgs
+  schemamap-stable:
+    url: github:schemamap/schemamap/dbc24756d4baca4ea7cd59a51514f26d2b17d49d
+    inputs:
+      nixpkgs:
+        follows: nixpkgs
   agenix:
     url: github:ryantm/agenix
+    inputs:
+      nixpkgs:
+        follows: nixpkgs
   clj-nix:
     url: github:jlesquembre/clj-nix
-imports:
-  - ./bash
+    inputs:
+      nixpkgs:
+        follows: nixpkgs
+  fenix:
+    url: github:nix-community/fenix
+    inputs:
+      nixpkgs:
+        follows: nixpkgs

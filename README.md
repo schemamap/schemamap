@@ -55,9 +55,9 @@ Integrate `schemamap` seamlessly with language-specific SDKs.
 
 Currently supported:
 
-- **[Bash](./bash)**
-- **[Clojure](./clojure)**:
-  [![Clojars Project](https://img.shields.io/clojars/v/io.schemamap/schemamap-clj.svg)](https://clojars.org/io.schemamap/schemamap-clj)
+- **[CLI (Rust)](./rust)**
+- **[Clojure (library)](./clojure)**:
+[![Clojars Project](https://img.shields.io/clojars/v/io.schemamap/schemamap-clj.svg)](https://clojars.org/io.schemamap/schemamap-clj)
 
 _Watch out for more languages coming soon! Have a request? [Open an issue](https://github.com/schemamap/schemamap/issues/new)._
 
@@ -86,6 +86,12 @@ If you discover any issue regarding security, please disclose the information re
 We'll get back to you ASAP and work with you to confirm and plan a fix for the issue.
 
 Please note that we do not currently offer a bug bounty program.
+
+## Acknowledgements
+
+This software uses the following third-party libraries:
+
+- [Rathole](https://github.com/rapiz1/rathole) licensed under Apache-2.0. See [LICENSES/rathole.txt](LICENSES/rathole.txt).
 
 ## License
 Copyright © 2023-2024 Schemamap.io Kft.

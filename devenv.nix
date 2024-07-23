@@ -1,7 +1,10 @@
-{ pkgs, config, lib, ... }:
+{ pkgs, config, lib, inputs, ... }:
 
 let postgres = pkgs.postgresql_15;
 in {
+  # TODO: remove once upstreamed to devenv.sh + nixpkgs
+  imports = [ ./schemamap.devenv.nix ];
+
   packages = with pkgs; [
     flyway.out
     shellcheck
@@ -12,17 +15,36 @@ in {
     git-lfs
     just
     zstd
+    jq
     (pkgs.callPackage ./devenv/create-flyway-migration.nix { })
-  ];
+  ] ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs.darwin.apple_sdk; [
+    frameworks.Security
+    frameworks.CoreFoundation
+    frameworks.CoreServices
+    frameworks.SystemConfiguration
+  ]);
 
   languages = {
     clojure.enable = true;
     java.enable = true;
+    rust = {
+      enable = true;
+      components = [ "rustc" "cargo" "clippy" "rustfmt" "rust-analyzer" ];
+    };
   };
+
+  # For stacktraces when things go wrong
+  env.RUST_BACKTRACE = "1";
 
   process.implementation = "process-compose";
 
   services = {
+    schemamap = {
+      enable = true;
+      # TODO: remove, once in nixpkgs
+      package = inputs.schemamap-stable.packages.${pkgs.system}.schemamap;
+    };
+
     # https://devenv.sh/reference/options/#servicespostgresenable
     postgres = {
       enable = true;
@@ -35,18 +57,6 @@ in {
         create user schemamap_test with password 'schemamap_test';
         grant all privileges on database schemamap_test to postgres;
         alter database schemamap_test owner to schemamap_test;
-
-        create role schemamap with
-          login
-          nosuperuser
-          nocreatedb
-          nocreaterole
-          noinherit
-          noreplication
-          connection limit 5
-          encrypted password 'schemamap';
-
-        grant connect, create on database schemamap_test to schemamap;
       '';
 
       listen_addresses = "127.0.0.1,localhost";
@@ -85,19 +95,29 @@ in {
       };
     };
 
-    # override CWD of bash devenv process so it runs in the correct folder
-    schemamap-cli.process-compose.working_dir = "bash";
+    # Needed so postgres can be restarted until the below issue is fixed:
+    # https://github.com/F1bonacc1/process-compose/issues/200
+    sleepy-keepalive.exec = "sleep infinity";
   };
 
   scripts = {
     psql-local.exec = "psql -h 127.0.0.1 -U schemamap_test schemamap_test $@";
     psql-local-smio.exec = "psql -h 127.0.0.1 -U schemamap schemamap_test $@";
-    pgclear.exec = "git clean -xf $PGDATA";
+    pgclear.exec = ''
+      cd "$DEVENV_ROOT"
+      process-compose process stop postgres
+      sleep 1 # blocking versions of above would be nice
+      git clean -xf "$PGDATA"
+      process-compose process start postgres
+      sleep 1 # allow postgres to init & become healthy
+      # process-compose process start seed-postgres
+    '';
     ci-test.exec = "process-compose --tui=false up -f process-compose.yml -f process-compose.test.yml";
   };
 
   enterShell = ''
     ln -sf ${config.process-managers.process-compose.configFile} ${config.env.DEVENV_ROOT}/process-compose.yml
+    export PATH="$DEVENV_ROOT/rust/target/debug:$DEVENV_ROOT/bin:$PATH"
   '';
 
   pre-commit.hooks = {
@@ -108,6 +128,11 @@ in {
       entry = "${pkgs.cljfmt}/bin/cljfmt fix";
       types_or = [ "clojure" "clojurescript" "edn" ];
     };
+    # TODO: figure out subfolder-based formatting properly
+    # rustfmt = {
+    #   enable = true;
+    #   entry = lib.mkForce "${pkgs.rustfmt}/bin/cargo-fmt fmt -- --check --manifest-path rust/Cargo.toml";
+    # };
     actionlint.enable = false; # for .github/workflows
     editorconfig-checker = {
       enable = true;
@@ -117,5 +142,14 @@ in {
     };
     nixpkgs-fmt.enable = true;
     shellcheck.enable = true;
+
+    recreate-schemamap-schema-sql = {
+      enable = true;
+      name = "recreate-schemamap-schema-sql";
+      entry = "./bin/recreate-schemamap-schema-sql.sh";
+      types = [ "sql" ];
+      verbose = true;
+      pass_filenames = false;
+    };
   };
 }

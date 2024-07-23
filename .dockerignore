@@ -1,0 +1,6 @@
+*
+!rust/*.sql
+!rust/*
+rust/target
+!docker/init_schemamap.sh
+!docker/port-fwd-postgres.sh
