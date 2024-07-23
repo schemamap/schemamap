@@ -11,11 +11,17 @@ use tracing_subscriber::EnvFilter;
 #[derive(Parser)]
 #[command(name = "schemamap")]
 #[command(version = "0.3")]
-#[command(about = "Schemamap.io CLI", long_about = None)]
+#[command(
+    about = "Instant batch data import for Postgres",
+    long_about = r##"
+  Schemamap.io uses the rich schema of your Postgres DB to infer data migrations/ETL.
+  It takes care of data analysis, figuring out a data import function if possible and putting it in the staging tables.
+  Then, it can import the data into the target tables, with the correct data types and constraints."##
+)]
 #[command(version, about, long_about = None)]
 struct Cli {
     /// Turn debugging information on
-    #[arg(short('v'), long, action = clap::ArgAction::Count, help = "Turn debugging information on, more v's for more verbosity")]
+    #[arg(short('v'), long, action = clap::ArgAction::Count, help = "Make the operation more talkative", global = true)]
     verbose: u8,
 
     #[command(subcommand)]
@@ -24,8 +30,11 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    #[command(about = "Initialize the SDK in the given Postgres DB, idempotently")]
     Init(init::InitArgs),
+    #[command(about = "Create a secure P2P tunnel to Schemamap.io.")]
     Up(up::UpArgs),
+    #[command(about = "Check if the SDK is configured correctly")]
     Doctor(doctor::DoctorArgs),
 }
 

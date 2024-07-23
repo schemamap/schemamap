@@ -15,6 +15,7 @@ in {
     git-lfs
     just
     zstd
+    jq
     (pkgs.callPackage ./devenv/create-flyway-migration.nix { })
   ] ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs.darwin.apple_sdk; [
     frameworks.Security

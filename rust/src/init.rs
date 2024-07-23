@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::Args;
 use dialoguer::theme::ColorfulTheme;
-use tokio_postgres::{config::Host, Client, NoTls};
+use tokio_postgres::{Client, NoTls};
 
 use crate::parsers;
 
@@ -16,11 +16,12 @@ pub struct InitArgs {
         short,
         long,
         value_name = "ADMIN-PSQL-CONNSTRING",
-        help = "Superuser PG connection string"
+        help = "Administrator PG connection string. Can also be provided via DATABASE_URL environment variable.",
+        long_help = "postgres://postgres:postgres@localhost:5432/postgres"
     )]
     pub(crate) conn: Option<String>,
 
-    #[arg(short, long, value_name = "USERNAME", help = "Superuser PG username")]
+    #[arg(short, long, value_name = "USERNAME", help = "Admin PG username")]
     username: Option<String>,
 
     #[arg(short, long, value_name = "DBNAME", help = "PG database name")]
@@ -40,7 +41,7 @@ pub struct InitArgs {
     input: Option<bool>,
 
     #[arg(long,
-        help = "Install development-time extensions, like snapshotting",
+        help = "Install development-time extensions, like snapshot/restore.",
         default_missing_value = "true",
         default_value = "true",
         num_args =0..=1,
@@ -75,27 +76,7 @@ pub(crate) fn initialize_pgconfig(args: InitArgs, interactive: bool) -> tokio_po
                 }
             });
 
-    let hosts: Vec<String> = pgconfig
-        .get_hosts()
-        .iter()
-        .map(|h| match h {
-            Host::Tcp(host) => host.to_string(),
-            #[cfg(unix)]
-            Host::Unix(path) => path.to_str().unwrap().to_string(),
-        })
-        .collect();
-
-    let password = std::str::from_utf8(pgconfig.get_password().unwrap_or_default())
-        .unwrap_or_else(|_| "<NONE>");
-
-    log::info!(
-        "Using connection string: postgres://{}:{}@{}:{}/{}",
-        pgconfig.get_user().unwrap(),
-        password,
-        hosts.join(","),
-        pgconfig.get_ports().iter().next().unwrap_or(&5432),
-        pgconfig.get_dbname().unwrap()
-    );
+    log::debug!("Using connection string: {:?}", pgconfig);
 
     return pgconfig;
 }
@@ -178,6 +159,7 @@ pub async fn grant_schemamap_usage(client: &Option<Client>) -> Result<()> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub async fn install_dev_extensions(client: &Option<Client>) -> Result<()> {
     // TODO: get from SQL files like the other constants
     const RESET_ROLE_SQL: &str = "RESET ROLE;";
@@ -203,7 +185,7 @@ pub async fn init(args: InitArgs) -> Result<()> {
 
     log::info!("Initializing Schemamap.io Postgres SDK idempotently");
 
-    let dev = args.dev.unwrap_or(true);
+    let _dev = args.dev.unwrap_or(true);
     // No reason to prompt for input if not interactive/TTY
     let interactive = atty::is(atty::Stream::Stdout) && args.input.unwrap_or(true);
 
@@ -252,6 +234,7 @@ pub async fn init(args: InitArgs) -> Result<()> {
 
     log::info!("Schemamap.io Postgres SDK installed successfully");
 
+    /* TODO: finish dev, then reenable
     let install_dev: bool;
     if interactive && !dev && !dry_run {
         install_dev = prompt_for_dev_installation();
@@ -259,9 +242,11 @@ pub async fn init(args: InitArgs) -> Result<()> {
         install_dev = dev;
     }
 
+
     if install_dev {
         install_dev_extensions(&client).await?;
     }
+     */
 
     Ok(())
 }
@@ -270,6 +255,7 @@ fn theme() -> ColorfulTheme {
     ColorfulTheme::default()
 }
 
+#[allow(dead_code)]
 fn prompt_for_dev_installation() -> bool {
     return dialoguer::Confirm::with_theme(&theme())
         .with_prompt("Do you want to install development-time extensions for DB snapshotting?")
