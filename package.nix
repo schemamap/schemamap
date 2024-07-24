@@ -20,7 +20,7 @@ pkgs.rustPlatform.buildRustPackage {
   ];
 
   meta = {
-    description = "Schemamap.io CLI - Postgres Data Movement";
+    description = "Schemamap.io CLI - Instant batch data import for Postgres";
     homepage = "https://github.com/schemamap/schemamap";
     license = pkgs.lib.licenses.mit;
     maintainers = [ pkgs.thenonameguy ];
