@@ -39,11 +39,7 @@ in {
   process.implementation = "process-compose";
 
   services = {
-    schemamap = {
-      enable = true;
-      # TODO: remove, once in nixpkgs
-      package = inputs.schemamap-stable.packages.${pkgs.system}.schemamap;
-    };
+    schemamap.enable = true;
 
     # https://devenv.sh/reference/options/#servicespostgresenable
     postgres = {

@@ -364,16 +364,16 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1719956923,
-        "narHash": "sha256-nNJHJ9kfPdzYsCOlHOnbiiyKjZUW5sWbwx3cakg3/C4=",
+        "lastModified": 1722415718,
+        "narHash": "sha256-5US0/pgxbMksF92k1+eOa8arJTJiPvsdZj9Dl+vJkM4=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "706eef542dec88cc0ed25b9075d3037564b2d164",
+        "rev": "c3392ad349a5227f4a3464dce87bcc5046692fce",
         "type": "github"
       },
       "original": {
         "id": "nixpkgs",
-        "ref": "nixos-24.05",
+        "ref": "nixpkgs-unstable",
         "type": "indirect"
       }
     },
@@ -520,8 +520,7 @@
         "devenv": "devenv",
         "fenix": "fenix",
         "nixpkgs": "nixpkgs",
-        "pre-commit-hooks": "pre-commit-hooks_2",
-        "schemamap-stable": "schemamap-stable"
+        "pre-commit-hooks": "pre-commit-hooks_2"
       }
     },
     "rust-analyzer-src": {
@@ -538,27 +537,6 @@
         "owner": "rust-lang",
         "ref": "nightly",
         "repo": "rust-analyzer",
-        "type": "github"
-      }
-    },
-    "schemamap-stable": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1721295362,
-        "narHash": "sha256-GLp0QHm09HmixEp3JDnDSfs+NmyKcFMK652ybp8wDpg=",
-        "owner": "schemamap",
-        "repo": "schemamap",
-        "rev": "dbc24756d4baca4ea7cd59a51514f26d2b17d49d",
-        "type": "github"
-      },
-      "original": {
-        "owner": "schemamap",
-        "repo": "schemamap",
-        "rev": "dbc24756d4baca4ea7cd59a51514f26d2b17d49d",
         "type": "github"
       }
     },

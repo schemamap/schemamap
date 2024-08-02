@@ -1,16 +1,9 @@
 allowUnfree: true
 inputs:
   nixpkgs:
-    url: nixpkgs/nixos-24.05
+    url: nixpkgs/nixpkgs-unstable
   devenv:
     url: github:cachix/devenv
-    inputs:
-      nixpkgs:
-        follows: nixpkgs
-  # used for stable devenv schemamap binary instead of depending on changing local FS
-  # TODO: remove once in nixpkgs
-  schemamap-stable:
-    url: github:schemamap/schemamap/dbc24756d4baca4ea7cd59a51514f26d2b17d49d
     inputs:
       nixpkgs:
         follows: nixpkgs
