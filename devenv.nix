@@ -39,7 +39,12 @@ in {
   process.implementation = "process-compose";
 
   services = {
-    schemamap.enable = true;
+    schemamap = {
+      enable = true;
+      # use local schemamap
+      # TODO: adopt public cachix to not rebuild all the time in CI
+      package = pkgs.callPackage ./package.nix { version = "dev"; };
+    };
 
     # https://devenv.sh/reference/options/#servicespostgresenable
     postgres = {
