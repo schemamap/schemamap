@@ -118,7 +118,7 @@ in {
 
   enterShell = ''
     ln -sf ${config.process-managers.process-compose.configFile} ${config.env.DEVENV_ROOT}/process-compose.yml
-    export PATH="$DEVENV_ROOT/rust/target/debug:$DEVENV_ROOT/bin:$PATH"
+    export PATH="$DEVENV_ROOT/bin:$PATH"
   '';
 
   pre-commit.hooks = {
