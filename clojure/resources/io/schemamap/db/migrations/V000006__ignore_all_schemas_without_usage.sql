@@ -55,6 +55,25 @@ constraints as (
   join pg_class c on c.oid = pc.conrelid
   join pg_namespace n on n.oid = c.relnamespace
   where n.nspname not in (select nspname from ignored_schemas)
+
+  union all
+
+  -- consider generated columns as "constrained", as they cannot be writen to
+
+  select
+      n.nspname as schema_name,
+      c.relname as table_name,
+      'generated_column' as constraint_name,
+      'g' as constraint_type,
+      pg_catalog.pg_get_expr(ad.adbin, ad.adrelid) as constraint_definition,
+      array[a.attnum] as constraint_keys,
+      null::int[] as foreign_keys
+  from pg_attribute a
+  join pg_class c on c.oid = a.attrelid
+  join pg_namespace n on n.oid = c.relnamespace
+  join pg_attrdef ad on a.attrelid = ad.adrelid and a.attnum = ad.adnum
+  where a.attgenerated in ('s', 'v') and
+        n.nspname not in (select nspname from ignored_schemas)
 ),
 
 indexes as (
