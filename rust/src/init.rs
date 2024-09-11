@@ -122,19 +122,6 @@ async fn grant_create_connect(dbname: &str, client: &Option<Client>) -> Result<(
     Ok(())
 }
 
-async fn set_role_to_schemamap(client: &Option<Client>) -> Result<()> {
-    // Set the role to schemamap, so the ownership is automatically correct
-    let set_role_sql = "SET role TO schemamap;";
-
-    if let Some(c) = client {
-        c.simple_query(set_role_sql).await?;
-    } else {
-        println!("{}", set_role_sql);
-    }
-
-    Ok(())
-}
-
 pub async fn create_schemamap_schema(client: &Option<Client>) -> Result<()> {
     if let Some(c) = client {
         let _ = c
@@ -161,13 +148,11 @@ pub async fn grant_schemamap_usage(client: &Option<Client>) -> Result<()> {
 
 #[allow(dead_code)]
 pub async fn install_dev_extensions(client: &Option<Client>) -> Result<()> {
-    // TODO: get from SQL files like the other constants
-    const RESET_ROLE_SQL: &str = "RESET ROLE;";
     const CREATE_DEV_DATABASE_SQL: &str = "CREATE DATABASE schemamap_dev;";
 
     // Have to submit separately otherwise the commands run in a transaction context
     // which is not allowed for CREATE DATABASE.
-    for sql in [RESET_ROLE_SQL, CREATE_DEV_DATABASE_SQL].iter() {
+    for sql in [CREATE_DEV_DATABASE_SQL].iter() {
         if let Some(c) = client {
             let _ = c
                 .batch_execute(sql)
@@ -221,8 +206,6 @@ pub async fn init(args: InitArgs) -> Result<()> {
     set_search_path(&client).await?;
 
     grant_create_connect(&dbname, &client).await?;
-
-    set_role_to_schemamap(&client).await?;
 
     log::info!("Creating schemamap SDK schema in {}", dbname);
 
