@@ -11,3 +11,6 @@ alter default privileges in schema schemamap grant execute ON functions TO PUBLI
 -- select * from schemamap.data_migrations;
 grant select on all tables in schema schemamap to PUBLIC;
 alter default privileges in schema schemamap grant select on tables to PUBLIC;
+
+-- this change allows schemamap to always execute functions, even if created by other roles
+alter default privileges in schema schemamap grant execute ON functions TO schemamap;
