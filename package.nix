@@ -4,7 +4,7 @@ pkgs.rustPlatform.buildRustPackage {
   pname = "schemamap";
   inherit version;
 
-  src = pkgs.lib.cleanSource ./rust;
+  src = pkgs.nix-gitignore.gitignoreSource [ ] ./rust;
   cargoLock.lockFile = ./rust/Cargo.lock;
   # cargoHash = "sha256-kxxjBIWUAkZSXP/N5wuJ9h/QGNGRuCMdelUsd/T0tkM=";
 
