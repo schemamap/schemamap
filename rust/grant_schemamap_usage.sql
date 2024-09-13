@@ -1,3 +1,51 @@
+-- transfer ownership of schemamap schema from creating role to schemamap user
+alter schema schemamap owner to schemamap;
+
+grant all privileges on all tables in schema schemamap to schemamap;
+grant all privileges on all sequences in schema schemamap to schemamap;
+grant all privileges on all views in schema schemamap to schemamap;
+
+-- transfer ownership of individual objects within 'schemamap' schema
+do $$
+declare
+    rec record;
+begin
+    for rec in select tablename from pg_catalog.pg_tables where schemaname = 'schemamap'
+    loop
+        execute format('alter table schemamap.%I owner to schemamap', rec.tablename);
+    end loop;
+
+    for rec in select sequencename from pg_catalog.pg_sequences where schemaname = 'schemamap'
+    loop
+        execute format('alter sequence schemamap.%I owner to schemamap', rec.sequencename);
+    end loop;
+
+    for rec in select viewname from pg_catalog.pg_views where schemaname = 'schemamap'
+    loop
+        execute format('alter view schemamap.%I owner to schemamap', rec.viewname);
+    end loop;
+
+    for rec in select matviewname from pg_catalog.pg_matviews where schemaname = 'schemamap'
+    loop
+        execute format('alter materialized view schemamap.%I owner to schemamap', rec.matviewname);
+    end loop;
+
+    for rec in
+        select 'alter function '||
+            quote_ident(nsp.nspname) ||
+            '.' ||
+            quote_ident(p.proname) ||
+            '(' ||
+            pg_get_function_identity_arguments(p.oid) ||
+            ') owner to schemamap;' as func_stmt
+        from pg_proc p
+        join pg_namespace nsp on p.pronamespace = nsp.oid
+        where nsp.nspname = 'schemamap'
+    loop
+        execute rec.func_stmt;
+    end loop;
+end $$;
+
 -- TODO: replace `PUBLIC` with your application DB role(s)
 grant usage on schema schemamap to PUBLIC;
 
@@ -11,6 +59,9 @@ alter default privileges in schema schemamap grant execute ON functions TO PUBLI
 -- select * from schemamap.data_migrations;
 grant select on all tables in schema schemamap to PUBLIC;
 alter default privileges in schema schemamap grant select on tables to PUBLIC;
+
+-- allow all operations on data migration table, so import/dispose functions can UPDATE/DELETE records
+grant all on schemamap.data_migrations to PUBLIC;
 
 -- this change allows schemamap to always execute functions, even if created by other roles
 alter default privileges in schema schemamap grant execute ON functions TO schemamap;
