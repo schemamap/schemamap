@@ -1,0 +1,16 @@
+default:
+  @just --list
+
+up:
+  docker-compose up -d
+
+down:
+  docker-compose down
+
+psql:
+  docker exec -it odoo-mydb-1 psql -U odoo odoo_test
+
+schemamap-init:
+  schemamap init
+
+test: up schemamap-init
