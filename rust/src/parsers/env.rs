@@ -5,13 +5,13 @@ use tokio_postgres::Config;
 pub(crate) fn config_from_env() -> Result<Config, anyhow::Error> {
     // Prefer DATABASE_URL over PG* env vars
 
-    log::debug!("Parsing DATABASE_URL");
-
     let database_config = match env::var("DATABASE_URL") {
         Ok(url) => {
             if url.is_empty() {
+                log::debug!("DATABASE_URL is empty");
                 Err(())
             } else {
+                log::debug!("Parsing DATABASE_URL");
                 Ok(url.parse::<Config>()?)
             }
         }
