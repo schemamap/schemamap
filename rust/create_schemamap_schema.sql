@@ -817,3 +817,6 @@ left join constraints ct on b.schema_name = ct.schema_name and b.table_name = ct
 left join indexes i on b.schema_name = i.schema_name and b.table_name = i.table_name and c.attnum = any(i.index_keys)
 group by 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
 order by 1, 2, 3;
+
+-- V000007__drop_table_metadata.sql
+drop table if exists schemamap.table_metadata;
