@@ -1,4 +1,4 @@
-use docker_compose_types::Compose;
+use docker_compose_types::{Compose, Ports};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
@@ -11,6 +11,44 @@ fn parse_docker_compose(file_path: &Path) -> anyhow::Result<Compose> {
     file.read_to_string(&mut contents)?;
     let compose_file: Compose = serde_yaml::from_str(&contents)?;
     Ok(compose_file)
+}
+
+fn parse_port(ports: &Ports, env_map: &HashMap<String, String>) -> u16 {
+    match ports {
+        docker_compose_types::Ports::Short(v) => {
+            log::debug!("Parsing docker-compose ports: {:?}", v);
+            v.iter()
+                .find_map(|p| {
+                    let split_port: Vec<&str> = p.splitn(3, ':').collect();
+                    if split_port.len() == 2 {
+                        Some(split_port[0])
+                    } else if split_port.len() == 3 {
+                        Some(split_port[1])
+                    } else {
+                        None
+                    }
+                    .map(|p| p.parse::<u16>().ok())
+                })
+                .unwrap_or_default()
+        }
+        docker_compose_types::Ports::Long(ports_long) => ports_long
+            .iter()
+            .find_map(|p| {
+                p.published.as_ref().map(|p| match p {
+                    docker_compose_types::PublishedPort::Single(sp) => Some(sp.clone()),
+                    // NOTE: this does not make sense for the official Postgres image
+                    docker_compose_types::PublishedPort::Range(_) => None,
+                })
+            })
+            .unwrap_or_default(),
+    }
+    .unwrap_or_else(|| {
+        env_map
+            .get("PGPORT")
+            .unwrap_or(&"5432".to_string())
+            .parse::<u16>()
+            .unwrap_or(5432)
+    })
 }
 
 fn get_pg_config_from_docker_compose(compose: &Compose) -> Option<Config> {
@@ -52,13 +90,7 @@ fn get_pg_config_from_docker_compose(compose: &Compose) -> Option<Config> {
                                 .unwrap_or(&"localhost".to_string()),
                         );
 
-                        config.port(
-                            env_map
-                                .get("POSTGRES_PORT")
-                                .unwrap_or(&"5432".to_string())
-                                .parse::<u16>()
-                                .unwrap(),
-                        );
+                        config.port(parse_port(&service.ports, &env_map));
 
                         config.user(
                             env_map

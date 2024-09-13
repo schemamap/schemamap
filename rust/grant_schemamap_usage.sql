@@ -3,7 +3,8 @@ alter schema schemamap owner to schemamap;
 
 grant all privileges on all tables in schema schemamap to schemamap;
 grant all privileges on all sequences in schema schemamap to schemamap;
-grant all privileges on all views in schema schemamap to schemamap;
+grant all privileges on all functions in schema schemamap to schemamap;
+grant all privileges on all procedures in schema schemamap to schemamap;
 
 -- transfer ownership of individual objects within 'schemamap' schema
 do $$

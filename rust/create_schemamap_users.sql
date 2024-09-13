@@ -34,6 +34,6 @@ begin
         from information_schema.schemata
         where schema_name not in ('pg_catalog', 'information_schema', 'pg_toast')
     loop
-        execute format('grant usage on schema %i to schemamap_schema_read', rec.schema_name);
+        execute format('grant usage on schema %I to schemamap_schema_read', rec.schema_name);
     end loop;
 end $$;

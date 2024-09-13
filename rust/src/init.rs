@@ -184,6 +184,7 @@ pub async fn init(args: InitArgs) -> Result<()> {
             Ok(conn) => (Some(conn.0), Some(conn.1)),
             Err(e) => {
                 log::error!("Postgres connection error: {}", e);
+                log::error!("{:?}", pgconfig);
                 std::process::exit(1);
             }
         }
