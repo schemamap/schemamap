@@ -2,7 +2,7 @@
 do $$
 begin
   if (select rolsuper or rolcreaterole as valid_role from pg_roles where rolname = current_user) is not true then
-    raise exception 'This script must be run by a superuser (usually "postgres" or $(whoami)).';
+    raise exception 'This script must be run by a user with CREATE ROLE privileges (usually "postgres" or $(whoami)).';
   end if;
 end $$;
 
@@ -23,3 +23,17 @@ grant schemamap_readwrite to schemamap;
 
 -- TODO: afterwards, grant connectivity to the database
 -- grant connect, create on database $POSTGRES_DB to schemamap;
+
+-- for better DX, grant usage to all schemas so the initial migration sees full DB graph
+do $$
+declare
+    rec record;
+begin
+    for rec in
+        select schema_name
+        from information_schema.schemata
+        where schema_name not in ('pg_catalog', 'information_schema', 'pg_toast')
+    loop
+        execute format('grant usage on schema %i to schemamap_schema_read', rec.schema_name);
+    end loop;
+end $$;
