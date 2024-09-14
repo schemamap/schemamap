@@ -37,3 +37,6 @@ begin
         execute format('grant usage on schema %I to schemamap_schema_read', rec.schema_name);
     end loop;
 end $$;
+
+-- allow usage on all schemas created by the current (administrator) role
+alter default privileges grant usage on schemas to schemamap_schema_read;
