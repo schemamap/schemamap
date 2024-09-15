@@ -79,6 +79,7 @@
                    (jdbc/execute! conn ["select * from schemamap.list_tenants()"]))))
           (testing "asking for master data entity candidates"
             ;; run a full vaccum so row count estimates are closer to reality
+
             (jdbc/execute! conn ["vacuum full analyze"])
             (is (= [{:schema_name         "production",
                      :table_name          "product",
@@ -140,20 +141,21 @@
             (is (=
                  {:constraints
                   [{:definition "UNIQUE (rowguid)",
-                    :name       "document_rowguid_key",
-                    :type       "u"}],
-                  :schema_name       "production",
+                    :name "document_rowguid_key",
+                    :type "u",
+                    :sequence_name nil}],
+                  :schema_name "production",
                   :column_description
                   "ROWGUIDCOL number uniquely identifying the record. Required for FileStream.",
-                  :object_type       "r",
-                  :not_null          true,
+                  :object_type "r",
+                  :not_null true,
+                  :attnum 11,
                   :table_description "Product maintenance documents.",
-                  :data_type         "uuid",
-                  :indexes           [{:name "document_rowguid_key", :is_unique true}],
-                  :column_name       "rowguid",
-                  :table_name        "document",
-                  :default_value     "uuid_generate_v1()"
-                  :attnum            11}
+                  :data_type "uuid",
+                  :indexes [{:name "document_rowguid_key", :is_unique true}],
+                  :column_name "rowguid",
+                  :table_name "document",
+                  :default_value "uuid_generate_v1()"}
                  (jdbc/execute-one!
                   conn
                   ["select *
