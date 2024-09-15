@@ -44,6 +44,7 @@ in {
       # use local schemamap
       # TODO: adopt public cachix to not rebuild all the time in CI
       package = pkgs.callPackage ./package.nix { version = "dev"; };
+      user = "schemamap_test";
     };
 
     # https://devenv.sh/reference/options/#servicespostgresenable
@@ -55,8 +56,8 @@ in {
       initialDatabases = [{ name = "schemamap_test"; }];
 
       initialScript = ''
-        create user schemamap_test with password 'schemamap_test';
-        grant all privileges on database schemamap_test to postgres;
+        create user schemamap_test with password 'schemamap_test' createrole;
+        grant all privileges on database schemamap_test to schemamap_test;
         alter database schemamap_test owner to schemamap_test;
       '';
 
@@ -93,6 +94,7 @@ in {
       process-compose = {
         availability.restart = "no";
         depends_on.postgres.condition = "process_healthy";
+        depends_on.schemamap-init.condition = "process_completed";
       };
     };
 
