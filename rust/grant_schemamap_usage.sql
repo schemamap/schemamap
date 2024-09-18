@@ -1,5 +1,5 @@
 -- transfer ownership of schemamap schema from creating role to schemamap user
-grant schemamap to current_role;
+grant schemamap to CURRENT_USER;
 alter schema schemamap owner to schemamap;
 
 grant all privileges on all tables in schema schemamap to schemamap;
@@ -68,4 +68,4 @@ grant all on schemamap.data_migrations to PUBLIC;
 -- this change allows schemamap to always execute functions, even if created by other roles
 alter default privileges in schema schemamap grant execute ON functions TO schemamap;
 
-revoke schemamap from current_role;
+revoke schemamap from CURRENT_USER;
