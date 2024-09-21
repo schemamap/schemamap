@@ -10,7 +10,7 @@ use tracing_subscriber::EnvFilter;
 
 #[derive(Parser)]
 #[command(name = "schemamap")]
-#[command(version = "0.3")]
+#[command(version = "0.4")]
 #[command(
     about = "Instant batch data import for Postgres",
     long_about = r##"
