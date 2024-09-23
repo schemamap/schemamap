@@ -820,3 +820,13 @@ order by 1, 2, 3;
 
 -- V000007__drop_table_metadata.sql
 drop table if exists schemamap.table_metadata;
+
+-- V000008__add_count_estimate_helper_fn.sql
+create or replace function schemamap.count_estimate(query text)
+returns bigint as $$
+declare
+  plan jsonb;
+begin
+    execute 'explain (format json) ' || query into plan;
+    return (plan->0->'Plan'->'Plan Rows')::bigint;
+end $$ language plpgsql volatile;
