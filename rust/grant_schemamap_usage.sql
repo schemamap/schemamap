@@ -49,7 +49,7 @@ begin
 end $$;
 
 -- TODO: replace `PUBLIC` with your application DB role(s)
-grant usage on schema schemamap to PUBLIC;
+grant usage, create on schema schemamap to PUBLIC;
 
 -- These changes allow your application roles & migrations to use the stored procedures, like:
 -- select * from schemamap.verify_installation();
