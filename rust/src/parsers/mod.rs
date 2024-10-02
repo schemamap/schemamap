@@ -40,5 +40,25 @@ pub(crate) fn parse_pgconfig(
         config.port(port);
     }
 
+    log::info!("Using Postgres connection params:");
+    log::info!(
+        "host={} port={} user={} dbname={}",
+        config
+            .get_hosts()
+            .get(0)
+            .map(|h| match h {
+                tokio_postgres::config::Host::Tcp(host) => host.clone(),
+                tokio_postgres::config::Host::Unix(path) => path.to_string_lossy().into_owned(),
+            })
+            .unwrap_or_default(),
+        config
+            .get_ports()
+            .get(0)
+            .map(|p| p.to_string())
+            .unwrap_or_default(),
+        config.get_user().unwrap_or_default(),
+        config.get_dbname().unwrap_or_default()
+    );
+
     Ok(config)
 }
