@@ -106,6 +106,8 @@ in {
   scripts = {
     psql-local.exec = "psql -h 127.0.0.1 -U schemamap_test schemamap_test $@";
     psql-local-smio.exec = "psql -h 127.0.0.1 -U schemamap schemamap_test $@";
+    psql-admin.exec = "psql -h 127.0.0.1 -U $USER schemamap_test $@";
+
     pgclear.exec = ''
       cd "$DEVENV_ROOT"
       process-compose process stop postgres
