@@ -16,9 +16,9 @@ psql:
 docker-ps:
   docker ps
 
-sleep-5:
-  # waiting 5 seconds for roles to be created
-  sleep 5
+sleep-3:
+  # waiting 3 seconds for roles to be created
+  sleep 3
 
 schemamap-init:
   # odoo puts the test DB under $DBNAME_test, in our case odoo_test
@@ -32,4 +32,16 @@ schemamap-up:
 schemamap-doctor:
   schemamap doctor
 
-test: up docker-ps sleep-5 schemamap-init schemamap-doctor schemamap-up
+odoo-init:
+  # Odoo DB needs to initialized explicitly using a HTTP call (vs on-startup)
+  curl -s -X POST http://127.0.0.1:8069/web/database/create \
+    -H "Content-Type: application/x-www-form-urlencoded" \
+    --data-urlencode "master_pwd=schemamap_demo" \
+    --data-urlencode "name=odoo_test" \
+    --data-urlencode "login=admin" \
+    --data-urlencode "password=admin" \
+    --data-urlencode "lang=en_US" \
+    --data-urlencode "demo=True" \
+    --data-urlencode "phone=" > /dev/null
+
+test: up docker-ps sleep-3 odoo-init schemamap-init schemamap-doctor schemamap-up
