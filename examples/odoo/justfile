@@ -13,6 +13,9 @@ psql-docker:
 psql:
   PGPASSWORD=myodoo psql -h 127.0.0.1 -p 8543 -U odoo odoo_test
 
+psql-schemamap:
+  PGPASSWORD=schemamap psql -h 127.0.0.1 -p 8543 -U schemamap odoo_test
+
 docker-ps:
   docker ps
 
