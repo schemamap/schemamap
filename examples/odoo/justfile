@@ -19,9 +19,9 @@ psql-schemamap:
 docker-ps:
   docker ps
 
-sleep-3:
-  # waiting 3 seconds for roles to be created
-  sleep 3
+wait-til-ready:
+  # waiting 5 seconds for roles to be created, python server to start up
+  sleep 5
 
 schemamap-init:
   # odoo puts the test DB under $DBNAME_test, in our case odoo_test
@@ -29,11 +29,11 @@ schemamap-init:
   schemamap init --dbname odoo_test
 
 schemamap-up:
-  # create encrypted TCP tunnel to Schemamap.io to expose local Postgres
+  # create encrypted TCP tunnel to Schemamap.io to expose local Postgres port
   schemamap up
 
 schemamap-doctor:
-  schemamap doctor
+  schemamap doctor --dbname odoo_test
 
 odoo-init:
   # Odoo DB needs to initialized explicitly using a HTTP call (vs on-startup)
@@ -47,4 +47,4 @@ odoo-init:
     --data-urlencode "demo=True" \
     --data-urlencode "phone=" > /dev/null
 
-test: up docker-ps sleep-3 odoo-init schemamap-init schemamap-doctor schemamap-up
+test: down up docker-ps wait-til-ready odoo-init schemamap-init schemamap-doctor schemamap-up

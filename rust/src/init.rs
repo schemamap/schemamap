@@ -1,3 +1,4 @@
+use crate::common::Cli;
 use anyhow::Result;
 use clap::Args;
 use dialoguer::theme::ColorfulTheme;
@@ -12,24 +13,6 @@ const GRANT_SCHEMAMAP_USAGE_SQL: &str = include_str!("../grant_schemamap_usage.s
 // Closely simulating psql cli arguments
 #[derive(Args)]
 pub struct InitArgs {
-    #[arg(
-        short,
-        long,
-        value_name = "ADMIN-PSQL-CONNSTRING",
-        help = "Administrator PG connection string. Can also be provided via DATABASE_URL environment variable.",
-        long_help = "postgres://postgres:postgres@localhost:5432/postgres"
-    )]
-    pub(crate) conn: Option<String>,
-
-    #[arg(short, long, value_name = "USERNAME", help = "Admin PG username")]
-    username: Option<String>,
-
-    #[arg(short, long, value_name = "DBNAME", help = "PG database name")]
-    dbname: Option<String>,
-
-    #[arg(short, long, value_name = "PORT", help = "PG database port")]
-    port: Option<u16>,
-
     #[arg(
         long,
         help = "Ask for inputs if not provided",
@@ -62,9 +45,9 @@ pub struct InitArgs {
     pub(crate) dry_run: Option<bool>,
 }
 
-pub(crate) fn initialize_pgconfig(args: InitArgs, interactive: bool) -> tokio_postgres::Config {
+pub(crate) fn initialize_pgconfig(cli: &Cli, interactive: bool) -> tokio_postgres::Config {
     let pgconfig =
-            parsers::parse_pgconfig(args.dbname, args.username, args.conn, args.port)
+            parsers::parse_pgconfig(cli.dbname.clone(), cli.username.clone(), cli.conn.clone(), cli.port)
             .unwrap_or_else(|_e| {
                 if interactive {
                     prompt_for_pg_connstring()
@@ -165,7 +148,7 @@ pub async fn install_dev_extensions(client: &Option<Client>) -> Result<()> {
     Ok(())
 }
 
-pub async fn init(args: InitArgs) -> Result<()> {
+pub async fn init(cli: &Cli, args: &InitArgs) -> Result<()> {
     let dry_run = args.dry_run.unwrap_or(false);
 
     log::info!("Initializing Schemamap.io Postgres SDK idempotently");
@@ -174,7 +157,7 @@ pub async fn init(args: InitArgs) -> Result<()> {
     // No reason to prompt for input if not interactive/TTY
     let interactive = atty::is(atty::Stream::Stdout) && args.input.unwrap_or(true);
 
-    let pgconfig = initialize_pgconfig(args, interactive);
+    let pgconfig = initialize_pgconfig(cli, interactive);
 
     // Start by establishing a Postgres superuser admin connection to DB
     let (client, connection) = if dry_run {

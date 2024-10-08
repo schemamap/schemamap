@@ -5,7 +5,7 @@ use clap::Parser;
 use console::{style, Emoji};
 use serde_json::to_string_pretty;
 
-use crate::{parsers, up};
+use crate::{common::Cli, parsers, up};
 
 static LOOKING_GLASS: Emoji<'_, '_> = Emoji("🔍 ", "");
 static CHECK: Emoji<'_, '_> = Emoji("✅ ", "");
@@ -269,8 +269,13 @@ $$);"##;
 }
 
 // Similar to `doom doctor`
-pub(crate) async fn doctor(_args: DoctorArgs) -> anyhow::Result<()> {
-    let pgconfig = parsers::parse_pgconfig(None, None, None, None)?;
+pub(crate) async fn doctor(cli: &Cli, _args: &DoctorArgs) -> anyhow::Result<()> {
+    let dbname = cli.dbname.clone();
+    let username = cli.username.clone();
+    let conn = cli.conn.clone();
+    let port = cli.port.clone();
+
+    let pgconfig = parsers::parse_pgconfig(dbname, username, conn, port)?;
 
     let (client, connection) = match pgconfig.connect(tokio_postgres::NoTls).await {
         Ok(c) => c,
