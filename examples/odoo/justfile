@@ -20,8 +20,8 @@ docker-ps:
   docker ps
 
 wait-til-ready:
-  # waiting 5 seconds for roles to be created, python server to start up
-  sleep 5
+  # waiting for roles to be created, python server to start up
+  sleep 10
 
 schemamap-init:
   # odoo puts the test DB under $DBNAME_test, in our case odoo_test
