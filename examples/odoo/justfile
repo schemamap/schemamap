@@ -13,6 +13,9 @@ psql-docker:
 psql:
   PGPASSWORD=myodoo psql -h 127.0.0.1 -p 8543 -U odoo odoo_test
 
+psql-schemamap-dev:
+  PGPASSWORD=myodoo psql -h 127.0.0.1 -p 8543 -U odoo schemamap_dev
+
 psql-schemamap:
   PGPASSWORD=schemamap psql -h 127.0.0.1 -p 8543 -U schemamap odoo_test
 
@@ -26,7 +29,7 @@ wait-til-ready:
 schemamap-init:
   # odoo puts the test DB under $DBNAME_test, in our case odoo_test
   # the rest of the connection params are inferred from the docker-compose.yml file
-  schemamap init --dbname odoo_test
+  schemamap init --dbname odoo_test --dev=true
 
 schemamap-up:
   # create encrypted TCP tunnel to Schemamap.io to expose local Postgres port
@@ -34,6 +37,9 @@ schemamap-up:
 
 schemamap-doctor:
   schemamap doctor --dbname odoo_test
+
+open:
+  open http://127.0.0.1:8069
 
 odoo-init:
   # Odoo DB needs to initialized explicitly using a HTTP call (vs on-startup)
