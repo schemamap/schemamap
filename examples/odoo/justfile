@@ -1,0 +1,56 @@
+default:
+  @just --list
+
+up:
+  docker-compose up -d
+
+down:
+  docker-compose down
+
+psql-docker:
+  docker exec -it odoo-mydb-1 psql -U odoo odoo_test
+
+psql:
+  PGPASSWORD=myodoo psql -h 127.0.0.1 -p 8543 -U odoo odoo_test
+
+psql-schemamap-dev:
+  PGPASSWORD=myodoo psql -h 127.0.0.1 -p 8543 -U odoo schemamap_dev
+
+psql-schemamap:
+  PGPASSWORD=schemamap psql -h 127.0.0.1 -p 8543 -U schemamap odoo_test
+
+docker-ps:
+  docker ps
+
+wait-til-ready:
+  # waiting for roles to be created, python server to start up
+  sleep 10
+
+schemamap-init:
+  # odoo puts the test DB under $DBNAME_test, in our case odoo_test
+  # the rest of the connection params are inferred from the docker-compose.yml file
+  schemamap init --dbname odoo_test --dev=true
+
+schemamap-up:
+  # create encrypted TCP tunnel to Schemamap.io to expose local Postgres port
+  schemamap up
+
+schemamap-doctor:
+  schemamap doctor --dbname odoo_test
+
+open:
+  open http://127.0.0.1:8069
+
+odoo-init:
+  # Odoo DB needs to initialized explicitly using a HTTP call (vs on-startup)
+  curl -s -X POST http://127.0.0.1:8069/web/database/create \
+    -H "Content-Type: application/x-www-form-urlencoded" \
+    --data-urlencode "master_pwd=schemamap_demo" \
+    --data-urlencode "name=odoo_test" \
+    --data-urlencode "login=admin" \
+    --data-urlencode "password=admin" \
+    --data-urlencode "lang=en_US" \
+    --data-urlencode "demo=True" \
+    --data-urlencode "phone=" > /dev/null
+
+test: down up docker-ps wait-til-ready odoo-init schemamap-init schemamap-doctor schemamap-up

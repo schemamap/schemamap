@@ -24,13 +24,11 @@ pub(crate) fn get_pg_config(
     let host = pgdata.clone().unwrap_or_else(|| "localhost".to_string());
 
     let config_str = if pgdata.is_some() {
-        log::info!("Using PGDATA environment variable to connect to Postgres");
         format!(
             "host={} user={} dbname={} password={}",
             host, username, dbname, password
         )
     } else {
-        log::info!("Using TCP-based image to connect to Postgres");
         format!(
             "host={} user={} dbname={} password={} port={}",
             host, username, dbname, password, port,

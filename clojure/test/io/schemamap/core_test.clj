@@ -18,24 +18,24 @@
 
 (deftest integration
   (let [#_#__app-db-role "schemamap_test"
-        sql-port    5432
-        db-opts     {:adapter       "postgresql"
-                     :database-name "schemamap_test"
-                     :server-name   "127.0.0.1"
-                     :port-number   sql-port}]
-    (with-open [#_#_sm-datasource  (-> db-opts
-                                       (assoc
-                                        :username     "schemamap"
-                                        :password     "schemamap"
-                                        :minimum-idle 1
-                                        :maximum-pool-size 2)
-                                       (hikari/make-datasource))
-                app-datasource (-> db-opts
-                                   (assoc
-                                    :username     "schemamap_test"
-                                    :password     "schemamap_test"
-                                    :maximum-pool-size 5)
-                                   (hikari/make-datasource))]
+        sql-port         5432
+        db-opts          {:adapter       "postgresql"
+                          :database-name "schemamap_test"
+                          :server-name   "127.0.0.1"
+                          :port-number   sql-port}]
+    (with-open [#_#_sm-datasource (-> db-opts
+                                      (assoc
+                                       :username     "schemamap"
+                                       :password     "schemamap"
+                                       :minimum-idle 1
+                                       :maximum-pool-size 2)
+                                      (hikari/make-datasource))
+                app-datasource    (-> db-opts
+                                      (assoc
+                                       :username     "schemamap_test"
+                                       :password     "schemamap_test"
+                                       :maximum-pool-size 5)
+                                      (hikari/make-datasource))]
       ;; NOTE: this is handled via devenv.nix integration, without Flyway dependency at all
       #_(testing "SDK can be initialized, repeatedly"
           (dotimes [nth-init 2]
@@ -79,6 +79,7 @@
                    (jdbc/execute! conn ["select * from schemamap.list_tenants()"]))))
           (testing "asking for master data entity candidates"
             ;; run a full vaccum so row count estimates are closer to reality
+
             (jdbc/execute! conn ["vacuum full analyze"])
             (is (= [{:schema_name         "production",
                      :table_name          "product",
@@ -139,21 +140,25 @@
           (testing "querying schema metadata overview"
             (is (=
                  {:constraints
-                  [{:definition "UNIQUE (rowguid)",
-                    :name       "document_rowguid_key",
-                    :type       "u"}],
+                  [{:definition    "UNIQUE (rowguid)",
+                    :name          "document_rowguid_key",
+                    :type          "u",
+                    :sequence_name nil}],
                   :schema_name       "production",
                   :column_description
                   "ROWGUIDCOL number uniquely identifying the record. Required for FileStream.",
                   :object_type       "r",
                   :not_null          true,
+                  :attnum            11,
                   :table_description "Product maintenance documents.",
                   :data_type         "uuid",
-                  :indexes           [{:name "document_rowguid_key", :is_unique true}],
+                  :indexes           [{:definition "btree (rowguid)",
+                                       :name       "document_rowguid_key",
+                                       :type       "u",
+                                       :immediate  true}],
                   :column_name       "rowguid",
                   :table_name        "document",
-                  :default_value     "uuid_generate_v1()"
-                  :attnum            11}
+                  :default_value     "uuid_generate_v1()"}
                  (jdbc/execute-one!
                   conn
                   ["select *
@@ -164,21 +169,22 @@
                   {:builder-fn jdbc.rs/as-unqualified-maps}))))
           (testing "asking what-if questions by updating schema in transactions"
               ;; baseline: how many columns do we know about per schema?
-            (let [verify-baseline! (fn [connectable]
-                                     (is (= [{:schema_name "sales", :count 233}
-                                             {:schema_name "production", :count 208}
-                                             {:schema_name "pr", :count 188}
-                                             {:schema_name "sa", :count 150}
-                                             {:schema_name "humanresources", :count 118}
-                                             {:schema_name "person", :count 94}
-                                             {:schema_name "pe", :count 82}
-                                             {:schema_name "purchasing", :count 67}
-                                             {:schema_name "pu", :count 51}
-                                             {:schema_name "hr", :count 45}]
-                                            (jdbc/execute!
-                                             connectable
-                                             ["select schema_name, count(*) from schemamap.schema_metadata_overview group by 1 order by 2 desc"]
-                                             {:builder-fn jdbc.rs/as-unqualified-maps}))))]
+            (let [verify-baseline!
+                  (fn [connectable]
+                    (is (= [{:schema_name "sales", :count 233}
+                            {:schema_name "production", :count 208}
+                            {:schema_name "pr", :count 188}
+                            {:schema_name "sa", :count 150}
+                            {:schema_name "humanresources", :count 118}
+                            {:schema_name "person", :count 94}
+                            {:schema_name "pe", :count 82}
+                            {:schema_name "purchasing", :count 67}
+                            {:schema_name "pu", :count 51}
+                            {:schema_name "hr", :count 45}]
+                           (jdbc/execute!
+                            connectable
+                            ["select schema_name, count(*) from schemamap.schema_metadata_overview group by 1 order by 2 desc"]
+                            {:builder-fn jdbc.rs/as-unqualified-maps}))))]
               (jdbc/with-transaction [tx conn {:rollback-only true}]
                 (verify-baseline! tx)
 

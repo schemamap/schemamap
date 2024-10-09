@@ -1,7 +1,8 @@
-use anyhow::Result;
+use crate::common::Cli;
+use anyhow::{Error, Result};
 use clap::Args;
 use dialoguer::theme::ColorfulTheme;
-use tokio_postgres::{Client, NoTls};
+use tokio_postgres::{Client, Config, NoTls};
 
 use crate::parsers;
 
@@ -9,27 +10,11 @@ const CREATE_SCHEMAMAP_USERS_SQL: &str = include_str!("../create_schemamap_users
 const CREATE_SCHEMAMAP_SCHEMA_SQL: &str = include_str!("../create_schemamap_schema.sql");
 const GRANT_SCHEMAMAP_USAGE_SQL: &str = include_str!("../grant_schemamap_usage.sql");
 
+const SCHEMAMAP_DEV_SQL: &str = include_str!("../schemamap_dev.sql");
+
 // Closely simulating psql cli arguments
 #[derive(Args)]
 pub struct InitArgs {
-    #[arg(
-        short,
-        long,
-        value_name = "ADMIN-PSQL-CONNSTRING",
-        help = "Administrator PG connection string. Can also be provided via DATABASE_URL environment variable.",
-        long_help = "postgres://postgres:postgres@localhost:5432/postgres"
-    )]
-    pub(crate) conn: Option<String>,
-
-    #[arg(short, long, value_name = "USERNAME", help = "Admin PG username")]
-    username: Option<String>,
-
-    #[arg(short, long, value_name = "DBNAME", help = "PG database name")]
-    dbname: Option<String>,
-
-    #[arg(short, long, value_name = "PORT", help = "PG database port")]
-    port: Option<u16>,
-
     #[arg(
         long,
         help = "Ask for inputs if not provided",
@@ -53,7 +38,7 @@ pub struct InitArgs {
     // have to do this for falsey-by-default flags
     #[arg(
         long,
-        help = "Emit SQL statements without executing them",
+        help = "Print SQL statements without executing them",
         default_missing_value = "true",
         default_value = "false",
         num_args =0..=1,
@@ -62,9 +47,9 @@ pub struct InitArgs {
     pub(crate) dry_run: Option<bool>,
 }
 
-pub(crate) fn initialize_pgconfig(args: InitArgs, interactive: bool) -> tokio_postgres::Config {
+pub(crate) fn initialize_pgconfig(cli: &Cli, interactive: bool) -> tokio_postgres::Config {
     let pgconfig =
-            parsers::parse_pgconfig(args.dbname, args.username, args.conn, args.port)
+            parsers::parse_pgconfig(cli.dbname.clone(), cli.username.clone(), cli.conn.clone(), cli.port)
             .unwrap_or_else(|_e| {
                 if interactive {
                     prompt_for_pg_connstring()
@@ -122,19 +107,6 @@ async fn grant_create_connect(dbname: &str, client: &Option<Client>) -> Result<(
     Ok(())
 }
 
-async fn set_role_to_schemamap(client: &Option<Client>) -> Result<()> {
-    // Set the role to schemamap, so the ownership is automatically correct
-    let set_role_sql = "SET role TO schemamap;";
-
-    if let Some(c) = client {
-        c.simple_query(set_role_sql).await?;
-    } else {
-        println!("{}", set_role_sql);
-    }
-
-    Ok(())
-}
-
 pub async fn create_schemamap_schema(client: &Option<Client>) -> Result<()> {
     if let Some(c) = client {
         let _ = c
@@ -159,39 +131,53 @@ pub async fn grant_schemamap_usage(client: &Option<Client>) -> Result<()> {
     Ok(())
 }
 
-#[allow(dead_code)]
-pub async fn install_dev_extensions(client: &Option<Client>) -> Result<()> {
-    // TODO: get from SQL files like the other constants
-    const RESET_ROLE_SQL: &str = "RESET ROLE;";
-    const CREATE_DEV_DATABASE_SQL: &str = "CREATE DATABASE schemamap_dev;";
-
+pub async fn install_dev_extensions(pgconfig: &Config, client: &Option<Client>) -> Result<()> {
     // Have to submit separately otherwise the commands run in a transaction context
     // which is not allowed for CREATE DATABASE.
-    for sql in [RESET_ROLE_SQL, CREATE_DEV_DATABASE_SQL].iter() {
-        if let Some(c) = client {
-            let _ = c
-                .batch_execute(sql)
-                .await
-                .inspect_err(|e| log::warn!("Failed to install dev extensions: {}", e));
+
+    let dbname = "schemamap_dev";
+    let create_db_sql = format!("CREATE DATABASE {};", dbname);
+    if let Some(c) = client {
+        if let Err(e) = c.execute(&create_db_sql, &[]).await {
+            log::warn!("Failed to create \"{}\" database: {}", dbname, e);
+            return Err(Error::msg("Failed to create dev database"));
         } else {
-            println!("{}", sql);
+            let mut dev_pgconfig = pgconfig.clone();
+            let dev_pgconfig_dbname = dev_pgconfig.dbname(&dbname);
+
+            let (schemamp_dev_c, connection) = dev_pgconfig_dbname.connect(NoTls).await?;
+
+            tokio::spawn(async move {
+                if let Err(e) = connection.await {
+                    log::warn!("Connection error to \"schemamap_dev\" DB: {}", e);
+                }
+            });
+
+            if let Err(e) = schemamp_dev_c.batch_execute(SCHEMAMAP_DEV_SQL).await {
+                log::warn!("Failed to install dev extensions: {}", e);
+            }
         }
+    } else {
+        println!("{}", create_db_sql);
+        println!("\\c schemamap_dev"); // assuming psql
+        println!("{}", SCHEMAMAP_DEV_SQL);
     }
+
     Ok(())
 }
 
-pub async fn init(args: InitArgs) -> Result<()> {
+pub async fn init(cli: &Cli, args: &InitArgs) -> Result<()> {
     let dry_run = args.dry_run.unwrap_or(false);
 
-    log::info!("Initializing Schemamap.io Postgres SDK idempotently");
+    log::info!("Initializing Schemamap.io Postgres SDK");
 
-    let _dev = args.dev.unwrap_or(true);
+    let dev = args.dev.unwrap_or(false);
     // No reason to prompt for input if not interactive/TTY
     let interactive = atty::is(atty::Stream::Stdout) && args.input.unwrap_or(true);
 
-    let pgconfig = initialize_pgconfig(args, interactive);
+    let pgconfig = initialize_pgconfig(cli, interactive);
 
-    // Start by establishing a Postgres superuser admin connection to DB
+    // Start by establishing a Postgres admin connection to DB
     let (client, connection) = if dry_run {
         (None, None)
     } else {
@@ -199,6 +185,10 @@ pub async fn init(args: InitArgs) -> Result<()> {
             Ok(conn) => (Some(conn.0), Some(conn.1)),
             Err(e) => {
                 log::error!("Postgres connection error: {}", e);
+                log::error!("{:?}", pgconfig);
+
+                println!("Alternatively, try running:\n");
+                println!("schemamap init --dbname=postgres --dry-run | psql");
                 std::process::exit(1);
             }
         }
@@ -222,19 +212,19 @@ pub async fn init(args: InitArgs) -> Result<()> {
 
     grant_create_connect(&dbname, &client).await?;
 
-    set_role_to_schemamap(&client).await?;
-
-    log::info!("Creating schemamap SDK schema in {}", dbname);
+    log::info!("Creating \"schemamap\" SDK schema in {}", dbname);
 
     create_schemamap_schema(&client).await?;
 
-    log::info!("Granting usage rights of schemamap schema in {}", dbname);
+    log::info!(
+        "Granting usage rights of \"schemamap\" schema in {}",
+        dbname
+    );
 
     grant_schemamap_usage(&client).await?;
 
     log::info!("Schemamap.io Postgres SDK installed successfully");
 
-    /* TODO: finish dev, then reenable
     let install_dev: bool;
     if interactive && !dev && !dry_run {
         install_dev = prompt_for_dev_installation();
@@ -242,11 +232,9 @@ pub async fn init(args: InitArgs) -> Result<()> {
         install_dev = dev;
     }
 
-
     if install_dev {
-        install_dev_extensions(&client).await?;
+        install_dev_extensions(&pgconfig, &client).await?;
     }
-     */
 
     Ok(())
 }
@@ -255,7 +243,6 @@ fn theme() -> ColorfulTheme {
     ColorfulTheme::default()
 }
 
-#[allow(dead_code)]
 fn prompt_for_dev_installation() -> bool {
     return dialoguer::Confirm::with_theme(&theme())
         .with_prompt("Do you want to install development-time extensions for DB snapshotting?")
@@ -266,7 +253,7 @@ fn prompt_for_dev_installation() -> bool {
 
 fn prompt_for_pg_connstring() -> String {
     dialoguer::Input::with_theme(&theme())
-        .with_prompt("Please provide your local Postgres connection string with superuser role")
+        .with_prompt("Please provide your local Postgres connection string with an admin role")
         .with_initial_text("postgres://postgres:postgres@localhost:5432/postgres")
         .interact_text()
         .unwrap()

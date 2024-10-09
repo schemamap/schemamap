@@ -690,3 +690,384 @@ left join constraints ct on b.schema_name = ct.schema_name and b.table_name = ct
 left join indexes i on b.schema_name = i.schema_name and b.table_name = i.table_name and c.attnum = any(i.index_keys)
 group by 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
 order by 1, 2, 3;
+
+-- V000006__ignore_all_schemas_without_usage.sql
+drop materialized view schemamap.schema_metadata_overview;
+create materialized view schemamap.schema_metadata_overview as
+with ignored_schemas as (
+  select nspname
+  from pg_namespace
+  where not has_schema_privilege(nspname, 'usage')
+  union
+  select nspname
+  from schemamap.ignored_schemas()
+),
+
+base as (
+  select
+    n.nspname as schema_name,
+    c.relname as table_name,
+    c.relkind as object_type,
+    obj_description(c.oid) as description
+  from pg_class c
+  join pg_namespace n on n.oid = c.relnamespace
+  where c.relkind in ('r', 'v', 'm') and
+        n.nspname not in (select nspname from ignored_schemas)
+),
+
+columns as (
+  select
+    n.nspname as schema_name,
+    c.relname as table_name,
+    a.attname as column_name,
+    pg_catalog.format_type(a.atttypid, a.atttypmod) as data_type,
+    a.attnotnull as not_null,
+    pg_catalog.pg_get_expr(d.adbin, d.adrelid) as default_value,
+    col_description(a.attrelid, a.attnum) as column_description,
+    a.attnum as attnum
+  from pg_attribute a
+  join pg_class c on c.oid = a.attrelid
+  join pg_namespace n on n.oid = c.relnamespace
+  left join pg_attrdef d on d.adrelid = a.attrelid and d.adnum = a.attnum
+  left join pg_attrdef e on e.oid = a.attrelid
+  where a.attnum > 0 and
+        not a.attisdropped and
+        c.relkind in ('r', 'v', 'm') and
+        n.nspname not in (select nspname from ignored_schemas)
+),
+
+constraints as (
+  select
+    n.nspname as schema_name,
+    c.relname as table_name,
+    pc.conname as constraint_name,
+    pc.contype as constraint_type,
+    pg_get_constraintdef(pc.oid) as constraint_definition,
+    pc.conkey::int[] as constraint_keys,
+    pc.confkey::int[] as foreign_keys
+  from pg_constraint pc
+  join pg_class c on c.oid = pc.conrelid
+  join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname not in (select nspname from ignored_schemas)
+
+  union all
+
+  -- consider generated columns as "constrained", as they cannot be writen to
+
+  select
+      n.nspname as schema_name,
+      c.relname as table_name,
+      'generated_column' as constraint_name,
+      'g' as constraint_type,
+      pg_catalog.pg_get_expr(ad.adbin, ad.adrelid) as constraint_definition,
+      array[a.attnum] as constraint_keys,
+      null::int[] as foreign_keys
+  from pg_attribute a
+  join pg_class c on c.oid = a.attrelid
+  join pg_namespace n on n.oid = c.relnamespace
+  join pg_attrdef ad on a.attrelid = ad.adrelid and a.attnum = ad.adnum
+  where a.attgenerated in ('s', 'v') and
+        n.nspname not in (select nspname from ignored_schemas)
+),
+
+indexes as (
+  select
+    n.nspname as schema_name,
+    c.relname as table_name,
+    i.relname as index_name,
+    pi.indexrelid,
+    pi.indisunique as is_unique,
+    pi.indkey::int[] as index_keys
+  from pg_index pi
+  join pg_class c on c.oid = indrelid
+  join pg_class i on i.oid = indexrelid
+  join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname not in (select nspname from ignored_schemas) and
+        pi.indisprimary = false
+)
+
+select
+  b.schema_name,
+  b.table_name,
+  c.column_name,
+  b.object_type,
+  b.description as table_description,
+  c.data_type,
+  c.not_null,
+  c.default_value,
+  c.column_description,
+  c.attnum,
+  jsonb_agg(distinct
+    jsonb_build_object(
+      'name', ct.constraint_name,
+      'type', ct.constraint_type,
+      'definition', ct.constraint_definition,
+      'sequence_name', case when ct.constraint_type = 'p' then
+        pg_get_serial_sequence(quote_ident(b.schema_name) || '.' || quote_ident(b.table_name), c.column_name)
+      end
+  )) filter (where ct.constraint_name is not null and c.attnum = any(ct.constraint_keys)) as constraints,
+  jsonb_agg(distinct
+    jsonb_build_object(
+     'name', i.index_name,
+     'is_unique', i.is_unique
+  )) filter (where i.index_name is not null and c.attnum = any(i.index_keys)) as indexes
+from base b
+join columns c on b.schema_name = c.schema_name and b.table_name = c.table_name
+left join constraints ct on b.schema_name = ct.schema_name and b.table_name = ct.table_name and c.attnum = any(ct.constraint_keys)
+left join indexes i on b.schema_name = i.schema_name and b.table_name = i.table_name and c.attnum = any(i.index_keys)
+group by 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+order by 1, 2, 3;
+
+-- V000007__drop_table_metadata.sql
+drop table if exists schemamap.table_metadata;
+
+-- V000008__add_count_estimate_helper_fn.sql
+create or replace function schemamap.count_estimate(query text)
+returns bigint as $$
+declare
+  plan jsonb;
+begin
+    execute 'explain (format json) ' || query into plan;
+    return (plan->0->'Plan'->'Plan Rows')::bigint;
+end $$ language plpgsql volatile;
+
+-- V000009__track_index_definitions_in_smo.sql
+drop materialized view schemamap.schema_metadata_overview;
+create materialized view schemamap.schema_metadata_overview as
+with ignored_schemas as (
+  select nspname
+  from pg_namespace
+  where not has_schema_privilege(nspname, 'usage')
+  union
+  select nspname
+  from schemamap.ignored_schemas()
+),
+
+base as (
+  select
+    n.nspname as schema_name,
+    c.relname as table_name,
+    c.relkind as object_type,
+    obj_description(c.oid) as description
+  from pg_class c
+  join pg_namespace n on n.oid = c.relnamespace
+  where c.relkind in ('r', 'v', 'm') and
+        n.nspname not in (select nspname from ignored_schemas)
+),
+
+columns as (
+  select
+    n.nspname as schema_name,
+    c.relname as table_name,
+    a.attname as column_name,
+    pg_catalog.format_type(a.atttypid, a.atttypmod) as data_type,
+    a.attnotnull as not_null,
+    pg_catalog.pg_get_expr(d.adbin, d.adrelid) as default_value,
+    col_description(a.attrelid, a.attnum) as column_description,
+    a.attnum as attnum
+  from pg_attribute a
+  join pg_class c on c.oid = a.attrelid
+  join pg_namespace n on n.oid = c.relnamespace
+  left join pg_attrdef d on d.adrelid = a.attrelid and d.adnum = a.attnum
+  left join pg_attrdef e on e.oid = a.attrelid
+  where a.attnum > 0 and
+        not a.attisdropped and
+        c.relkind in ('r', 'v', 'm') and
+        n.nspname not in (select nspname from ignored_schemas)
+),
+
+constraints as (
+  select
+    n.nspname as schema_name,
+    c.relname as table_name,
+    pc.conname as constraint_name,
+    pc.contype as constraint_type,
+    pg_get_constraintdef(pc.oid) as constraint_definition,
+    pc.conkey::int[] as constraint_keys,
+    pc.confkey::int[] as foreign_keys
+  from pg_constraint pc
+  join pg_class c on c.oid = pc.conrelid
+  join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname not in (select nspname from ignored_schemas)
+
+  union all
+
+  -- consider generated columns as "constrained", as they cannot be writen to
+
+  select
+      n.nspname as schema_name,
+      c.relname as table_name,
+      'generated_column' as constraint_name,
+      'g' as constraint_type,
+      pg_catalog.pg_get_expr(ad.adbin, ad.adrelid) as constraint_definition,
+      array[a.attnum] as constraint_keys,
+      null::int[] as foreign_keys
+  from pg_attribute a
+  join pg_class c on c.oid = a.attrelid
+  join pg_namespace n on n.oid = c.relnamespace
+  join pg_attrdef ad on a.attrelid = ad.adrelid and a.attnum = ad.adnum
+  where a.attgenerated in ('s', 'v') and
+        n.nspname not in (select nspname from ignored_schemas)
+),
+
+indexes as (
+  select
+    n.nspname as schema_name,
+    c.relname as table_name,
+    i.relname as index_name,
+    case
+    when pi.indisunique then 'u'
+    when pi.indisexclusion then 'x'
+    else 'i'
+    end as index_type,
+    regexp_replace(pg_get_indexdef(indexrelid, 0, true), '(^.*USING )', '') as index_definition,
+    pi.indimmediate as index_immediate,
+    pi.indexrelid,
+    pi.indkey::int[] as index_keys
+  from pg_index pi
+  join pg_class c on c.oid = indrelid
+  join pg_class i on i.oid = indexrelid
+  join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname not in (select nspname from ignored_schemas) and
+        pi.indisprimary = false and indisvalid
+)
+
+select
+  b.schema_name,
+  b.table_name,
+  c.column_name,
+  b.object_type,
+  b.description as table_description,
+  c.data_type,
+  c.not_null,
+  c.default_value,
+  c.column_description,
+  c.attnum,
+  jsonb_agg(distinct
+    jsonb_build_object(
+      'name', ct.constraint_name,
+      'type', ct.constraint_type,
+      'definition', ct.constraint_definition,
+      'sequence_name', case when ct.constraint_type = 'p' then
+        pg_get_serial_sequence(quote_ident(b.schema_name) || '.' || quote_ident(b.table_name), c.column_name)
+      end
+  )) filter (where ct.constraint_name is not null and c.attnum = any(ct.constraint_keys)) as constraints,
+  jsonb_agg(distinct
+    jsonb_build_object(
+     'name', i.index_name,
+     'type', i.index_type,
+     'definition', i.index_definition,
+     'immediate', i.index_immediate
+  )) filter (where i.index_name is not null and c.attnum = any(i.index_keys)) as indexes
+from base b
+join columns c on b.schema_name = c.schema_name and b.table_name = c.table_name
+left join constraints ct on b.schema_name = ct.schema_name and b.table_name = ct.table_name and c.attnum = any(ct.constraint_keys)
+left join indexes i on b.schema_name = i.schema_name and b.table_name = i.table_name and c.attnum = any(i.index_keys)
+group by 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+order by 1, 2, 3;
+
+-- V000010__schema_concepts.sql
+create view schemamap.smo as
+  select *
+  from schemamap.schema_metadata_overview;
+
+create or replace function schemamap.list_concepts()
+returns table(concept_name text) as $$
+  select
+    substring(routine_name from 4) as concept_name
+  from information_schema.routines
+  where routine_schema = 'schemamap' and
+        routine_name ilike 'is_%' and
+        data_type = 'boolean';
+$$ language sql stable;
+
+create or replace function schemamap.redefine_smo_view_with_concepts()
+returns void as $$
+declare
+  _concept_name text;
+  _concept_columns text := '';
+begin
+  for _concept_name in select concept_name from schemamap.list_concepts() order by 1
+  loop
+    _concept_columns := _concept_columns || format(', schemamap.is_%I(smo) as is_%I', _concept_name, _concept_name);
+  end loop;
+
+  -- NOTE: do not depend on this view with other objects, use the schemamap.schema_metadata_overview matview instead.
+  drop view if exists schemamap.smo;
+
+  execute format('create or replace view schemamap.smo as
+                  select smo.* %s
+                  from schemamap.schema_metadata_overview smo',
+    _concept_columns);
+end;
+$$ language plpgsql;
+
+create or replace function schemamap.define_concept
+(concept_name text, bool_select_sql text)
+returns text as $concept$
+begin
+  execute format('create or replace function schemamap.is_%I(smo schemamap.schema_metadata_overview)
+  returns bool as $def$
+    %s
+  $def$ language sql immutable strict parallel safe;', concept_name, bool_select_sql);
+  raise notice '(Re-)defined schema concept for: %', $1;
+
+  perform schemamap.redefine_smo_view_with_concepts();
+
+  return concept_name;
+end; $concept$ language plpgsql volatile security definer;
+
+select schemamap.define_concept('pii', $$
+  select
+  lower(smo.column_name) ~*
+  '^(email|first_name|last_name|full_name|middle_name|phone|telephone|mobile|address|street|city|state|zip|postal|ssn|social_security|dob|date_of_birth|birthdate|credit_card|ccn|card_number|passport|driver_license|license_number|national_id|tax_id|tin|ein|bank_account|account_number|routing_number|iban|bic|swift|personal_id|medicare|medicaid|health_insurance|policy_number|insurance_number|patient_id|member_id|user_id|username|login|password|secret|token|api_key|auth)'
+$$);
+
+select schemamap.define_concept('metadata', $$
+  select smo.column_name in ('created_at', 'updated_at', 'version')
+$$);
+
+select schemamap.define_concept('schema_migration_table', $$
+  select smo.table_name in
+  (
+  -- Rails / Supabase / Ecto / etc.
+  'schema_migrations',
+  -- Flyway
+  'flyway_schema_history',
+  -- Liquibase
+  'databasechangelog',
+  'databasechangeloglock',
+  -- Django
+  'django_migrations',
+  -- SQLAlchemy
+  'alembic_version',
+  'alembic_version_table',
+  -- Knex.js
+  'knex_migrations',
+  'knex_migrations_lock',
+  -- Phinx (PHP)
+  'phinxlog',
+  -- TypeORM
+  'typeorm_metadata',
+  -- Goose (Go)
+  'goose_db_version');
+$$);
+
+create or replace function schemamap.ignored_schemas()
+returns table(nspname text) as $$
+  values
+    -- Postgres
+   ('pg_catalog'), ('information_schema'),
+   -- Citus
+   ('columnar'), ('columnar_internal'),
+   -- CockroachDB
+   ('crdb_internal'),
+   -- PostGIS
+   ('tiger'),
+   -- exclude ourselves to not pollute SMO with data migrations
+   ('schemamap')
+$$ language sql stable;
+
+-- convenience views for consistency with smos
+create view schemamap.tenants as select * from schemamap.list_tenants();
+create view schemamap.mdes as select * from schemamap.list_mdes();

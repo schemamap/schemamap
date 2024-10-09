@@ -1,0 +1,22 @@
+# copied from https://hub.docker.com/_/odoo
+# changes:
+# - expose Postgres port outside of docker (moved to TCP 8543 to not conflict with common ports)
+services:
+  web:
+    image: odoo:17.0
+    depends_on:
+      - mydb
+    ports:
+      - "8069:8069"
+    environment:
+    - HOST=mydb
+    - USER=odoo
+    - PASSWORD=myodoo
+  mydb:
+    image: postgres:15
+    ports:
+      - "127.0.0.1:8543:5432"
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=myodoo
+      - POSTGRES_USER=odoo

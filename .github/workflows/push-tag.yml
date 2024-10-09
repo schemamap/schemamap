@@ -5,9 +5,6 @@
 name: Create release & SQL assets on tag push
 
 on:
-  # TODO: remove
-  pull_request:
-
   push:
     tags:
       - "v*.*.*"
@@ -129,7 +126,7 @@ jobs:
         files: rust/target/${{ matrix.target }}/release/${{ matrix.exe }}
         args: -q --best --lzma
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
         name: schemamap-${{ matrix.target }}
         path: rust/target/${{ matrix.target }}/release/${{ matrix.exe }}

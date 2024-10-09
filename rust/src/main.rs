@@ -1,42 +1,14 @@
+mod common;
 mod doctor;
 mod init;
 mod parsers;
 mod up;
 
 use anyhow::Result;
-use clap::{Parser, Subcommand};
 
+use clap::Parser;
+use common::{Cli, Commands};
 use tracing_subscriber::EnvFilter;
-
-#[derive(Parser)]
-#[command(name = "schemamap")]
-#[command(version = "0.3")]
-#[command(
-    about = "Instant batch data import for Postgres",
-    long_about = r##"
-  Schemamap.io uses the rich schema of your Postgres DB to infer data migrations/ETL.
-  It takes care of data analysis, figuring out a data import function if possible and putting it in the staging tables.
-  Then, it can import the data into the target tables, with the correct data types and constraints."##
-)]
-#[command(version, about, long_about = None)]
-struct Cli {
-    /// Turn debugging information on
-    #[arg(short('v'), long, action = clap::ArgAction::Count, help = "Make the operation more talkative", global = true)]
-    verbose: u8,
-
-    #[command(subcommand)]
-    command: Commands,
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    #[command(about = "Initialize the SDK in the given Postgres DB, idempotently")]
-    Init(init::InitArgs),
-    #[command(about = "Create a secure P2P tunnel to Schemamap.io.")]
-    Up(up::UpArgs),
-    #[command(about = "Check if the SDK is configured correctly")]
-    Doctor(doctor::DoctorArgs),
-}
 
 fn configure_logging(debug: bool) {
     #[cfg(feature = "console")]
@@ -75,8 +47,8 @@ async fn main() -> Result<()> {
     }
 
     match cli.command {
-        Commands::Init(args) => init::init(args).await,
+        Commands::Init(ref args) => init::init(&cli, args).await,
         Commands::Up(args) => up::up(args).await,
-        Commands::Doctor(args) => doctor::doctor(args).await,
+        Commands::Doctor(ref args) => doctor::doctor(&cli, args).await,
     }
 }
