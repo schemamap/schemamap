@@ -7,7 +7,12 @@
 --
 -- Usage:
 -- select create_snapshot(template_db_name := 'postgres', new_db_name := 'postgres_copy');
--- select restore_snapshot(template_db_name := 'postgres_copy', new_db_name := 'postgres');
+
+-- select restore_snapshot(template_db_name := 'postgres_copy', new_db_name := 'postgres_restored');
+
+-- select drop_database('postgres_restored');
+
+-- DROP DATABASE postgres_copy; select gc_snapshots(); select count(1) = 0 from snapshots;
 
 do $$
 begin
