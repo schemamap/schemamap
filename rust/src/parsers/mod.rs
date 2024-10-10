@@ -1,4 +1,4 @@
-use tokio_postgres::Config;
+use tokio_postgres::{config::Host, Config};
 
 mod default;
 mod docker_compose;
@@ -47,8 +47,9 @@ pub(crate) fn parse_pgconfig(
             .get_hosts()
             .get(0)
             .map(|h| match h {
-                tokio_postgres::config::Host::Tcp(host) => host.clone(),
-                tokio_postgres::config::Host::Unix(path) => path.to_string_lossy().into_owned(),
+                Host::Tcp(host) => host.clone(),
+                #[cfg(unix)]
+                Host::Unix(path) => path.to_string_lossy().into_owned(),
             })
             .unwrap_or_default(),
         config
