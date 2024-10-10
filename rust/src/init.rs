@@ -26,9 +26,9 @@ pub struct InitArgs {
     input: Option<bool>,
 
     #[arg(long,
-        help = "Install development-time extensions, like snapshot/restore.",
-        default_missing_value = "true",
-        default_value = "true",
+        help = "Install development-time extensions, like DB snapshot/restore.",
+        default_missing_value = "false",
+        default_value = "false",
         num_args =0..=1,
         action = clap::ArgAction::Set
     )]
