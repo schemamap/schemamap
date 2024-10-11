@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 
-use crate::{doctor, init, up};
+use crate::{doctor, init, porcelain, up};
 
 #[derive(Parser)]
 #[command(name = "schemamap")]
@@ -67,4 +67,6 @@ pub enum Commands {
     Up(up::UpArgs),
     #[command(about = "Check if the SDK is configured correctly")]
     Doctor(doctor::DoctorArgs),
+    #[command(about = "Get a high-level overview of the current DB state")]
+    Status(porcelain::StatusArgs),
 }

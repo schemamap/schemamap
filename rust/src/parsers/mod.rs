@@ -1,5 +1,7 @@
 use tokio_postgres::{config::Host, Config};
 
+use crate::common::Cli;
+
 mod default;
 mod docker_compose;
 mod env;
@@ -62,4 +64,13 @@ pub(crate) fn parse_pgconfig(
     );
 
     Ok(config)
+}
+
+pub(crate) fn parse_pgconfig_from_cli(cli: &Cli) -> anyhow::Result<Config> {
+    let dbname = cli.dbname.clone();
+    let username = cli.username.clone();
+    let conn = cli.conn.clone();
+    let port = cli.port.clone();
+
+    parse_pgconfig(dbname, username, conn, port)
 }

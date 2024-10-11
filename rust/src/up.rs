@@ -6,7 +6,7 @@ use url::Url;
 use url_open::open;
 
 #[derive(Parser, Debug, Default, Clone)]
-pub(crate) struct UpArgs {
+pub struct UpArgs {
     #[arg(
         short,
         long,

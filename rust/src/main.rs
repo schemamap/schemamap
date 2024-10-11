@@ -2,6 +2,7 @@ mod common;
 mod doctor;
 mod init;
 mod parsers;
+pub mod porcelain;
 mod up;
 
 use anyhow::Result;
@@ -37,8 +38,7 @@ async fn main() -> Result<()> {
 
     let dry_run = match cli.command {
         Commands::Init(ref args) => args.dry_run.unwrap_or(false),
-        Commands::Up(_) => false,
-        Commands::Doctor(_) => false,
+        _ => false,
     };
 
     // In case of dry-run, we don't want to log at all, to not interfere with STDOUT/STDERR
@@ -50,5 +50,6 @@ async fn main() -> Result<()> {
         Commands::Init(ref args) => init::init(&cli, args).await,
         Commands::Up(args) => up::up(args).await,
         Commands::Doctor(ref args) => doctor::doctor(&cli, args).await,
+        Commands::Status(ref args) => porcelain::status(&cli, args).await,
     }
 }
