@@ -27,7 +27,7 @@ test:
   schemamap init --input=false --conn="$DATABASE_URL"
 
   echo "Checking reinit with Unix socket"
-  export DATABASE_URL="postgresql://$(whoami)@$(echo -n $PGDATA | jq -sRr @uri)/schemamap_test"
+  export DATABASE_URL="postgresql://$(whoami)@$(echo -n $PGHOST | jq -sRr @uri)/schemamap_test"
 
   echo "Reinitializing to test idempotency with: $DATABASE_URL"
   schemamap init --input=false --dev #--conn="$DATABASE_URL"
