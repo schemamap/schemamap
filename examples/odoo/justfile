@@ -35,6 +35,9 @@ schemamap-up:
   # create encrypted TCP tunnel to Schemamap.io to expose local Postgres port
   schemamap up
 
+schemamap-status:
+  schemamap status --dbname odoo_test
+
 schemamap-doctor:
   schemamap doctor --dbname odoo_test
 
@@ -53,4 +56,4 @@ odoo-init:
     --data-urlencode "demo=True" \
     --data-urlencode "phone=" > /dev/null
 
-test: down up docker-ps wait-til-ready odoo-init schemamap-init schemamap-doctor schemamap-up
+test: down up docker-ps wait-til-ready odoo-init schemamap-init schemamap-doctor schemamap-status schemamap-up

@@ -15,6 +15,9 @@ pub struct StatusArgs {
     refresh: Option<bool>,
 }
 
+#[derive(Parser, Debug, Default, Clone)]
+pub struct RefreshArgs {}
+
 pub async fn connect(cli: &Cli) -> anyhow::Result<Client> {
     let pgconfig = parsers::parse_pgconfig_from_cli(cli)?;
 
@@ -35,49 +38,48 @@ pub async fn connect(cli: &Cli) -> anyhow::Result<Client> {
     Ok(client)
 }
 
+async fn refresh_sql(client: &Client) -> anyhow::Result<()> {
+    let refresh_sql = "select schemamap.update_schema_metadata_overview(concurrently := false)";
+
+    log::info!("Refreshing schemamap.schema_metadata_overview");
+    if let Err(e) = client.execute(refresh_sql, &[]).await {
+        log::warn!(
+            "Failed to refresh schemamap.schema_metadata_overview: {}",
+            e
+        );
+        return Err(e.into());
+    }
+
+    log::info!("Refreshed schemamap.schema_metadata_overview with latest DB state");
+
+    Ok(())
+}
+
+pub async fn refresh(cli: &Cli) -> anyhow::Result<()> {
+    let client = connect(cli).await?;
+
+    refresh_sql(&client).await?;
+
+    Ok(())
+}
+
 pub async fn status(cli: &Cli, args: &StatusArgs) -> anyhow::Result<()> {
     let client = connect(cli).await?;
 
     if let Some(refresh) = args.refresh {
         if refresh {
-            log::info!("Refreshing schemamap.schema_metadata_overview");
-            client
-                .execute(
-                    "select schemamap.update_schema_metadata_overview(concurrently := false)",
-                    &[],
-                )
-                .await?;
-
-            log::info!("Refreshed schemamap.schema_metadata_overview with latest DB state");
+            refresh_sql(&client).await?;
         }
     }
 
     let aggregate_summary = client
         .query_one(
-            "select
-                        count(distinct schema_name) as schema_count,
-                        count(distinct (schema_name, table_name)) as table_count,
-                        count(1) as column_count,
-                        sum(case when is_pii then 1 else 0 end) as pii_count,
-                        sum(case when is_metadata then 1 else 0 end) as metadata_count,
-                        sum(case when is_schema_migration_table then 1 else 0 end) as schema_migration_table_count
-                      from schemamap.smo",
+            "select jsonb_pretty(to_jsonb(status)) as status_text from schemamap.status as status",
             &[],
         )
         .await?;
 
-    println!("Schema count: {}", aggregate_summary.get::<_, i64>(0));
-    println!("Table count: {}", aggregate_summary.get::<_, i64>(1));
-    println!("Column count: {}", aggregate_summary.get::<_, i64>(2));
-    println!("PII column count: {}", aggregate_summary.get::<_, i64>(3));
-    println!(
-        "Metadata column count: {}",
-        aggregate_summary.get::<_, i64>(4)
-    );
-    println!(
-        "Schema migration table count: {}",
-        aggregate_summary.get::<_, i64>(5)
-    );
+    println!("{}", aggregate_summary.get::<_, String>(0));
 
     Ok(())
 }

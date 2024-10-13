@@ -120,14 +120,39 @@ pub async fn create_schemamap_schema(client: &Option<Client>) -> Result<()> {
     Ok(())
 }
 
-pub async fn grant_schemamap_usage(client: &Option<Client>) -> Result<()> {
+fn remove_after_dot(s: &str) -> &str {
+    match s.find('.') {
+        Some(index) => &s[..index],
+        None => s,
+    }
+}
+
+fn normalize_username<'a>(pgconfig: &'a Config, username: &'a str) -> &'a str {
+    // NOTE: Supabase uses a $user.$dbid to dispatch to the the correct DB
+    if let Some(first_host) = pgconfig.get_hosts().get(0) {
+        if let tokio_postgres::config::Host::Tcp(host_str) = first_host {
+            if host_str.contains("supabase.com") {
+                return remove_after_dot(username);
+            }
+        }
+    }
+    username
+}
+
+pub async fn grant_schemamap_usage(pgconfig: &Config, client: &Option<Client>) -> Result<()> {
+    // NOTE: without this Supabase via Supavisor/PGBouncer disconnects on CURRENT_USER
+    let current_user = normalize_username(pgconfig, pgconfig.get_user().unwrap_or("postgres"));
+
+    let current_user_replaced_sql = GRANT_SCHEMAMAP_USAGE_SQL
+        .replace(" CURRENT_USER;", format!(" \"{}\";", current_user).as_str());
+
     if let Some(c) = client {
         let _ = c
-            .batch_execute(GRANT_SCHEMAMAP_USAGE_SQL)
+            .batch_execute(&current_user_replaced_sql)
             .await
             .inspect_err(|e| log::warn!("Failed to grant schemamap usage: {}", e));
     } else {
-        println!("{}", GRANT_SCHEMAMAP_USAGE_SQL);
+        println!("{}", current_user_replaced_sql);
     }
     Ok(())
 }
@@ -224,7 +249,7 @@ pub async fn init(cli: &Cli, args: &InitArgs) -> Result<()> {
         dbname
     );
 
-    grant_schemamap_usage(&client).await?;
+    grant_schemamap_usage(&pgconfig, &client).await?;
 
     log::info!("Schemamap.io Postgres SDK installed successfully");
 

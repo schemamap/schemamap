@@ -69,4 +69,6 @@ pub enum Commands {
     Doctor(doctor::DoctorArgs),
     #[command(about = "Get a high-level overview of the current DB state")]
     Status(porcelain::StatusArgs),
+    #[command(about = "Refresh the SMO materialized view to reflect the current DB state")]
+    Refresh(porcelain::RefreshArgs),
 }

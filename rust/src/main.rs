@@ -28,6 +28,8 @@ fn configure_logging(debug: bool) {
                 EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::from(level)),
             )
             .with_ansi(is_atty)
+            // log to stderr to allow tooling to use stdout (example for `schemamap status` to pipe into jq)
+            .with_writer(std::io::stderr)
             .init();
     }
 }
@@ -51,5 +53,6 @@ async fn main() -> Result<()> {
         Commands::Up(args) => up::up(args).await,
         Commands::Doctor(ref args) => doctor::doctor(&cli, args).await,
         Commands::Status(ref args) => porcelain::status(&cli, args).await,
+        Commands::Refresh(_) => porcelain::refresh(&cli).await,
     }
 }
