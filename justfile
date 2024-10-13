@@ -4,8 +4,8 @@ default:
 build:
   docker build . \
     -t schemamap/postgres:latest \
-    -t schemamap/postgres:16.2 \
-    -t schemamap/postgres:16.2-v0.4.0
+    -t schemamap/postgres:17.0 \
+    -t schemamap/postgres:17.0-v0.4.1
 
 # One-time setup of BuildKit so multi-arch builds are possible
 buildx-setup:
@@ -16,15 +16,15 @@ buildx-setup:
 buildx-and-push:
   docker build --platform linux/amd64,linux/arm64,linux/arm/v7 . \
     -t schemamap/postgres:latest \
-    -t schemamap/postgres:16.2 \
-    -t schemamap/postgres:16.2-v0.4.0 \
+    -t schemamap/postgres:17.0 \
+    -t schemamap/postgres:17.0-v0.4.1 \
     --push
 
 login:
   docker login -u schemamap
 
 push:
-  docker push schemamap/postgres:16.2
+  docker push schemamap/postgres:17.0
   docker push schemamap/postgres:latest
 
 up:

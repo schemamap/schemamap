@@ -20,10 +20,10 @@ pub(crate) fn get_pg_config(
     let password = env::var("POSTGRES_PASSWORD")
         .unwrap_or_else(|_| env::var("PGPASSWORD").unwrap_or("postgres".to_string()));
 
-    let pgdata = env::var("PGDATA").ok();
-    let host = pgdata.clone().unwrap_or_else(|| "localhost".to_string());
+    let pghost = env::var("PGHOST").ok();
+    let host = pghost.clone().unwrap_or_else(|| "localhost".to_string());
 
-    let config_str = if pgdata.is_some() {
+    let config_str = if pghost.is_some() {
         format!(
             "host={} user={} dbname={} password={}",
             host, username, dbname, password

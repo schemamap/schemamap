@@ -20,7 +20,7 @@ psql-schemamap:
   PGPASSWORD=schemamap psql -h 127.0.0.1 -p 8543 -U schemamap odoo_test
 
 docker-ps:
-  docker ps
+  docker-compose ps
 
 wait-til-ready:
   # waiting for roles to be created, python server to start up
@@ -34,6 +34,9 @@ schemamap-init:
 schemamap-up:
   # create encrypted TCP tunnel to Schemamap.io to expose local Postgres port
   schemamap up
+
+schemamap-status:
+  schemamap status --dbname odoo_test
 
 schemamap-doctor:
   schemamap doctor --dbname odoo_test
@@ -53,4 +56,4 @@ odoo-init:
     --data-urlencode "demo=True" \
     --data-urlencode "phone=" > /dev/null
 
-test: down up docker-ps wait-til-ready odoo-init schemamap-init schemamap-doctor schemamap-up
+test: down up docker-ps wait-til-ready odoo-init schemamap-init schemamap-doctor schemamap-status schemamap-up

@@ -1,5 +1,5 @@
 use crate::common::Cli;
-use anyhow::{Error, Result};
+use anyhow::Result;
 use clap::Args;
 use dialoguer::theme::ColorfulTheme;
 use tokio_postgres::{Client, Config, NoTls};
@@ -25,10 +25,11 @@ pub struct InitArgs {
     )]
     input: Option<bool>,
 
+    // Until https://github.com/clap-rs/clap/issues/5577 is addressed
+    // have to do this for falsey-by-default flags
     #[arg(long,
-        help = "Install development-time extensions, like snapshot/restore.",
+        help = "Install development-time extensions, like DB snapshot/restore.",
         default_missing_value = "true",
-        default_value = "true",
         num_args =0..=1,
         action = clap::ArgAction::Set
     )]
@@ -119,14 +120,39 @@ pub async fn create_schemamap_schema(client: &Option<Client>) -> Result<()> {
     Ok(())
 }
 
-pub async fn grant_schemamap_usage(client: &Option<Client>) -> Result<()> {
+fn remove_after_dot(s: &str) -> &str {
+    match s.find('.') {
+        Some(index) => &s[..index],
+        None => s,
+    }
+}
+
+fn normalize_username<'a>(pgconfig: &'a Config, username: &'a str) -> &'a str {
+    // NOTE: Supabase uses a $user.$dbid to dispatch to the the correct DB
+    if let Some(first_host) = pgconfig.get_hosts().get(0) {
+        if let tokio_postgres::config::Host::Tcp(host_str) = first_host {
+            if host_str.contains("supabase.com") {
+                return remove_after_dot(username);
+            }
+        }
+    }
+    username
+}
+
+pub async fn grant_schemamap_usage(pgconfig: &Config, client: &Option<Client>) -> Result<()> {
+    // NOTE: without this Supabase via Supavisor/PGBouncer disconnects on CURRENT_USER
+    let current_user = normalize_username(pgconfig, pgconfig.get_user().unwrap_or("postgres"));
+
+    let current_user_replaced_sql = GRANT_SCHEMAMAP_USAGE_SQL
+        .replace(" CURRENT_USER;", format!(" \"{}\";", current_user).as_str());
+
     if let Some(c) = client {
         let _ = c
-            .batch_execute(GRANT_SCHEMAMAP_USAGE_SQL)
+            .batch_execute(&current_user_replaced_sql)
             .await
             .inspect_err(|e| log::warn!("Failed to grant schemamap usage: {}", e));
     } else {
-        println!("{}", GRANT_SCHEMAMAP_USAGE_SQL);
+        println!("{}", current_user_replaced_sql);
     }
     Ok(())
 }
@@ -136,11 +162,12 @@ pub async fn install_dev_extensions(pgconfig: &Config, client: &Option<Client>) 
     // which is not allowed for CREATE DATABASE.
 
     let dbname = "schemamap_dev";
+    log::info!("Creating \"{}\" DB", dbname);
     let create_db_sql = format!("CREATE DATABASE {};", dbname);
     if let Some(c) = client {
         if let Err(e) = c.execute(&create_db_sql, &[]).await {
             log::warn!("Failed to create \"{}\" database: {}", dbname, e);
-            return Err(Error::msg("Failed to create dev database"));
+            return Ok(());
         } else {
             let mut dev_pgconfig = pgconfig.clone();
             let dev_pgconfig_dbname = dev_pgconfig.dbname(&dbname);
@@ -155,6 +182,8 @@ pub async fn install_dev_extensions(pgconfig: &Config, client: &Option<Client>) 
 
             if let Err(e) = schemamp_dev_c.batch_execute(SCHEMAMAP_DEV_SQL).await {
                 log::warn!("Failed to install dev extensions: {}", e);
+            } else {
+                log::info!("Installed dev extensions to \"{}\" DB", dbname);
             }
         }
     } else {
@@ -171,7 +200,6 @@ pub async fn init(cli: &Cli, args: &InitArgs) -> Result<()> {
 
     log::info!("Initializing Schemamap.io Postgres SDK");
 
-    let dev = args.dev.unwrap_or(false);
     // No reason to prompt for input if not interactive/TTY
     let interactive = atty::is(atty::Stream::Stdout) && args.input.unwrap_or(true);
 
@@ -221,15 +249,15 @@ pub async fn init(cli: &Cli, args: &InitArgs) -> Result<()> {
         dbname
     );
 
-    grant_schemamap_usage(&client).await?;
+    grant_schemamap_usage(&pgconfig, &client).await?;
 
     log::info!("Schemamap.io Postgres SDK installed successfully");
 
-    let install_dev: bool;
-    if interactive && !dev && !dry_run {
+    let install_dev;
+    if interactive && args.dev.is_none() && !dry_run {
         install_dev = prompt_for_dev_installation();
     } else {
-        install_dev = dev;
+        install_dev = args.dev.unwrap_or(false);
     }
 
     if install_dev {

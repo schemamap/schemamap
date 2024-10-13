@@ -1,4 +1,6 @@
-use tokio_postgres::Config;
+use tokio_postgres::{config::Host, Config};
+
+use crate::common::Cli;
 
 mod default;
 mod docker_compose;
@@ -47,8 +49,9 @@ pub(crate) fn parse_pgconfig(
             .get_hosts()
             .get(0)
             .map(|h| match h {
-                tokio_postgres::config::Host::Tcp(host) => host.clone(),
-                tokio_postgres::config::Host::Unix(path) => path.to_string_lossy().into_owned(),
+                Host::Tcp(host) => host.clone(),
+                #[cfg(unix)]
+                Host::Unix(path) => path.to_string_lossy().into_owned(),
             })
             .unwrap_or_default(),
         config
@@ -61,4 +64,13 @@ pub(crate) fn parse_pgconfig(
     );
 
     Ok(config)
+}
+
+pub(crate) fn parse_pgconfig_from_cli(cli: &Cli) -> anyhow::Result<Config> {
+    let dbname = cli.dbname.clone();
+    let username = cli.username.clone();
+    let conn = cli.conn.clone();
+    let port = cli.port.clone();
+
+    parse_pgconfig(dbname, username, conn, port)
 }

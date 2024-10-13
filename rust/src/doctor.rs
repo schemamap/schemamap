@@ -5,7 +5,7 @@ use clap::Parser;
 use console::{style, Emoji};
 use serde_json::to_string_pretty;
 
-use crate::{common::Cli, parsers, up};
+use crate::{common::Cli, porcelain::connect, up};
 
 static LOOKING_GLASS: Emoji<'_, '_> = Emoji("🔍 ", "");
 static CHECK: Emoji<'_, '_> = Emoji("✅ ", "");
@@ -14,7 +14,7 @@ static LOCK: Emoji<'_, '_> = Emoji("🔒 ", "");
 static WARN: Emoji<'_, '_> = Emoji("⚠️ ", "");
 
 #[derive(Parser, Debug, Default, Clone)]
-pub(crate) struct DoctorArgs {}
+pub struct DoctorArgs {}
 
 fn print_check(message: &str, check_result: bool) {
     if check_result {
@@ -270,26 +270,7 @@ $$);"##;
 
 // Similar to `doom doctor`
 pub(crate) async fn doctor(cli: &Cli, _args: &DoctorArgs) -> anyhow::Result<()> {
-    let dbname = cli.dbname.clone();
-    let username = cli.username.clone();
-    let conn = cli.conn.clone();
-    let port = cli.port.clone();
-
-    let pgconfig = parsers::parse_pgconfig(dbname, username, conn, port)?;
-
-    let (client, connection) = match pgconfig.connect(tokio_postgres::NoTls).await {
-        Ok(c) => c,
-        Err(e) => {
-            log::error!("Failed to connect to database: {}", e);
-            return Err(anyhow::anyhow!("Failed to connect to database: {}", e));
-        }
-    };
-
-    tokio::spawn(async move {
-        if let Err(e) = connection.await {
-            log::error!("Postgres connection error: {}", e);
-        }
-    });
+    let client = connect(cli).await?;
 
     println!("{}Checking Schemamap SDK...", LOOKING_GLASS);
 
