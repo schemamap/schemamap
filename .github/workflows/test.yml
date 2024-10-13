@@ -51,7 +51,7 @@ jobs:
         purge-primary-key: never
 
     - name: Install devenv.sh
-      run: nix profile install tarball+https://github.com/cachix/devenv/tarball/v0.6.3
+      run: nix profile install nixpkgs#devenv
 
     - name: Run pre-commit hooks, verify formats
       run: devenv ci
