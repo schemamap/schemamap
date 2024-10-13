@@ -14,8 +14,7 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          # TODO: update to macos-latest after: https://github.com/nixbuild/nix-quick-install-action/issues/43
-          - macos-13
+          - macos-latest
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -26,6 +25,10 @@ jobs:
         extra_nix_config: |
           access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
           keep-outputs = true
+
+    - uses: cachix/cachix-action@v15
+      with:
+        name: devenv
 
     # https://github.com/nix-community/cache-nix-action#usage
     - name: Restore and cache Nix store
@@ -47,9 +50,6 @@ jobs:
         # except the version with the `primary-key`, if it exists
         purge-primary-key: never
 
-    - uses: cachix/cachix-action@v12
-      with:
-        name: devenv
     - name: Install devenv.sh
       run: nix profile install tarball+https://github.com/cachix/devenv/tarball/v0.6.3
 
