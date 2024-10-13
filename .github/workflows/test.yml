@@ -21,9 +21,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - uses: nixbuild/nix-quick-install-action@v28
+    - uses: cachix/install-nix-action@v30
       with:
-        nix_conf: |
+        extra_nix_config: |
           access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
           keep-outputs = true
 
