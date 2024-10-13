@@ -20,7 +20,7 @@ psql-schemamap:
   PGPASSWORD=schemamap psql -h 127.0.0.1 -p 8543 -U schemamap odoo_test
 
 docker-ps:
-  docker ps
+  docker-compose ps
 
 wait-til-ready:
   # waiting for roles to be created, python server to start up
