@@ -6,7 +6,7 @@ let
 in
 {
   options.services.schemamap = {
-    enable = lib.mkEnableOption "the Schemamap.io Postgres integration";
+    enable = lib.mkEnableOption "Schemamap.io Postgres integration";
 
     package = lib.mkOption {
       type = lib.types.package;
@@ -21,6 +21,12 @@ in
       description = ''
         The Postgres rolename that is used for `schemamap init` (if null, the database specific role or $USER is used).
       '';
+    };
+
+    dev = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Install \"schemamap_dev\" DB that allows for DB snapshot/restore.";
     };
   };
 
@@ -43,7 +49,7 @@ in
                       init-db.user
                     else "\${USER:-$(id -nu)}";
                 in
-                "${cfg.package}/bin/schemamap init --dbname=${init-db.name} --username=${user}"
+                "${cfg.package}/bin/schemamap init --dbname=${init-db.name} --username=${user} --dev=${lib.boolToString cfg.dev}"
               )
               initialDatabases;
           in

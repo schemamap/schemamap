@@ -5,7 +5,7 @@ COPY . .
 # ARG FEATURES
 RUN cd rust && cargo build --locked --release
 
-FROM postgres:16.2
+FROM postgres:17.0
 MAINTAINER Krisztian Szabo <krisz@schemamap.io>
 
 COPY --from=builder /home/rust/src/rust/target/release/schemamap /usr/local/bin/schemamap
