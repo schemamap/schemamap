@@ -18,6 +18,15 @@ pub struct Cli {
     #[arg(short('v'), long, action = clap::ArgAction::Count, help = "Make the operation more talkative", global = true)]
     pub verbose: u8,
 
+    #[arg(short('q'),
+    long,
+    action = clap::ArgAction::SetTrue,
+     default_missing_value = "true",
+     default_value = "false",
+     help = "Only output to stdout, without logging",
+     global = true)]
+    pub quiet: Option<bool>,
+
     #[arg(
         short,
         long,

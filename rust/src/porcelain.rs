@@ -5,7 +5,9 @@ use crate::{common::Cli, parsers};
 
 #[derive(Parser, Debug, Default, Clone)]
 pub struct StatusArgs {
-    #[arg(long,
+    #[arg(
+      short('r'),
+      long,
       help = "Refresh the SMO materialized view to reflect the current DB state.",
       default_value = "true",
       default_missing_value = "true",
@@ -13,6 +15,18 @@ pub struct StatusArgs {
       action = clap::ArgAction::Set
   )]
     refresh: Option<bool>,
+
+    #[arg(
+      short('a'),
+      long,
+      help = "Return all schemamap.smo records as a JSON array.",
+      default_missing_value = "true",
+      default_value = "false",
+
+      num_args =0..=1,
+      action = clap::ArgAction::Set
+  )]
+    all: Option<bool>,
 }
 
 #[derive(Parser, Debug, Default, Clone)]
@@ -72,14 +86,24 @@ pub async fn status(cli: &Cli, args: &StatusArgs) -> anyhow::Result<()> {
         }
     }
 
-    let aggregate_summary = client
-        .query_one(
-            "select jsonb_pretty(to_jsonb(status)) as status_text from schemamap.status as status",
+    let all = args.all.unwrap_or(false);
+
+    let output = if all {
+        client.query_one(
+            "select jsonb_pretty(jsonb_agg(smo order by schema_name, table_name, column_name)) as smo_text
+                from schemamap.smo as smo",
             &[],
         )
-        .await?;
+    } else {
+        client.query_one(
+            "select jsonb_pretty(to_jsonb(status)) as status_text
+            from schemamap.status as status",
+            &[],
+        )
+    }
+    .await?;
 
-    println!("{}", aggregate_summary.get::<_, String>(0));
+    println!("{}", output.get::<_, String>(0));
 
     Ok(())
 }

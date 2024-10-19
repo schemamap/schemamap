@@ -38,13 +38,15 @@ fn configure_logging(debug: bool) {
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
+    // In case of dry-run, we don't want to log at all, to not interfere with STDOUT/STDERR
     let dry_run = match cli.command {
         Commands::Init(ref args) => args.dry_run.unwrap_or(false),
         _ => false,
     };
 
-    // In case of dry-run, we don't want to log at all, to not interfere with STDOUT/STDERR
-    if !dry_run {
+    let quiet = cli.quiet.unwrap_or(false);
+
+    if !quiet && !dry_run {
         configure_logging(cli.verbose > 0);
     }
 
