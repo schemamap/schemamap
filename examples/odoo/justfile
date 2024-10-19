@@ -13,6 +13,9 @@ psql-docker:
 psql:
   PGPASSWORD=myodoo psql -h 127.0.0.1 -p 8543 -U odoo odoo_test
 
+psql-postgres:
+  PGPASSWORD=myodoo psql -h 127.0.0.1 -p 8543 -U odoo postgres
+
 psql-schemamap-dev:
   PGPASSWORD=myodoo psql -h 127.0.0.1 -p 8543 -U odoo schemamap_dev
 
@@ -56,4 +59,5 @@ odoo-init:
     --data-urlencode "demo=True" \
     --data-urlencode "phone=" > /dev/null
 
+demo: down up docker-ps wait-til-ready odoo-init
 test: down up docker-ps wait-til-ready odoo-init schemamap-init schemamap-doctor schemamap-status schemamap-up
