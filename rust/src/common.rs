@@ -80,4 +80,8 @@ pub enum Commands {
     Status(porcelain::StatusArgs),
     #[command(about = "Refresh the SMO materialized view to reflect the current DB state")]
     Refresh(porcelain::RefreshArgs),
+    #[command(about = "Snapshot the current DB to a new snapshot")]
+    Snapshot(porcelain::SnapshotArgs),
 }
+
+pub const SCHEMAMAP_DEV_DB: &str = "schemamap_dev";

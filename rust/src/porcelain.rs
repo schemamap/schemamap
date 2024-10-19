@@ -1,7 +1,10 @@
 use clap::Parser;
-use tokio_postgres::Client;
+use tokio_postgres::{Client, Config};
 
-use crate::{common::Cli, parsers};
+use crate::{
+    common::{Cli, SCHEMAMAP_DEV_DB},
+    parsers,
+};
 
 #[derive(Parser, Debug, Default, Clone)]
 pub struct StatusArgs {
@@ -29,13 +32,8 @@ pub struct StatusArgs {
     all: Option<bool>,
 }
 
-#[derive(Parser, Debug, Default, Clone)]
-pub struct RefreshArgs {}
-
-pub async fn connect(cli: &Cli) -> anyhow::Result<Client> {
-    let pgconfig = parsers::parse_pgconfig_from_cli(cli)?;
-
-    let (client, connection) = match pgconfig.connect(tokio_postgres::NoTls).await {
+pub async fn connect_from_config(config: &Config) -> anyhow::Result<Client> {
+    let (client, connection) = match config.connect(tokio_postgres::NoTls).await {
         Ok(c) => c,
         Err(e) => {
             log::error!("Failed to connect to database: {}", e);
@@ -50,6 +48,12 @@ pub async fn connect(cli: &Cli) -> anyhow::Result<Client> {
     });
 
     Ok(client)
+}
+
+pub async fn connect(cli: &Cli) -> anyhow::Result<Client> {
+    let pgconfig = parsers::parse_pgconfig_from_cli(cli)?;
+
+    connect_from_config(&pgconfig).await
 }
 
 async fn refresh_sql(client: &Client) -> anyhow::Result<()> {
@@ -68,6 +72,9 @@ async fn refresh_sql(client: &Client) -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[derive(Parser, Debug, Default, Clone)]
+pub struct RefreshArgs {}
 
 pub async fn refresh(cli: &Cli) -> anyhow::Result<()> {
     let client = connect(cli).await?;
@@ -104,6 +111,91 @@ pub async fn status(cli: &Cli, args: &StatusArgs) -> anyhow::Result<()> {
     .await?;
 
     println!("{}", output.get::<_, String>(0));
+
+    Ok(())
+}
+
+pub async fn connect_to_schemamap_dev(cli: &Cli) -> anyhow::Result<Client> {
+    let mut pgconfig = parsers::parse_pgconfig_from_cli(cli)?;
+
+    pgconfig.dbname(SCHEMAMAP_DEV_DB);
+
+    connect_from_config(&pgconfig).await
+}
+
+#[derive(Parser, Debug, Default, Clone)]
+pub struct SnapshotArgs {
+    #[arg(
+        long("from"),
+        help = "The name of the database to snapshot, defaulting to the DB of the connection string"
+    )]
+    pub template_db_name: Option<String>,
+    pub snapshot_name: Option<String>,
+}
+
+struct GitStats {
+    branch_name: String,
+    revision: String,
+}
+
+fn current_git_stats() -> anyhow::Result<GitStats> {
+    let repo = git2::Repository::discover(".")?;
+    let head = repo.head()?;
+    let branch_name = head
+        .shorthand()
+        .ok_or_else(|| anyhow::anyhow!("Unable to determine branch name"))?
+        .to_string();
+    let revision = head
+        .target()
+        .ok_or_else(|| anyhow::anyhow!("Unable to determine revision"))?
+        .to_string();
+
+    Ok(GitStats {
+        branch_name,
+        revision,
+    })
+}
+
+pub async fn snapshot(cli: &Cli, args: &SnapshotArgs) -> anyhow::Result<()> {
+    let pgconfig = parsers::parse_pgconfig_from_cli(cli)?;
+
+    let mut dev_pgconfig = pgconfig.clone();
+    dev_pgconfig.dbname(SCHEMAMAP_DEV_DB);
+
+    let client = connect_from_config(&dev_pgconfig).await?;
+
+    let template_db_name = args.template_db_name.as_ref().map_or_else(
+        || {
+            pgconfig
+                .get_dbname()
+                .unwrap_or_else(|| "postgres")
+                .to_string()
+        },
+        |name| name.clone(),
+    );
+    let git_stats = current_git_stats().unwrap_or_else(|_| GitStats {
+        branch_name: "unknown".to_string(),
+        revision: "unknown".to_string(),
+    });
+
+    let new_db_name = args.snapshot_name.as_ref().map_or_else(
+        || format!("{}_{}", template_db_name, git_stats.branch_name),
+        |name| name.clone(),
+    );
+
+    client
+        .execute(
+            "select create_snapshot($1, $2)",
+            &[&template_db_name, &new_db_name],
+        )
+        .await?;
+
+    client
+        .execute(
+            "update snapshots set git_branch = $1, git_rev = $2 where db_name = $3",
+            &[&git_stats.branch_name, &git_stats.revision, &new_db_name],
+        )
+        .await?;
 
     Ok(())
 }

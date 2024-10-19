@@ -56,5 +56,6 @@ async fn main() -> Result<()> {
         Commands::Doctor(ref args) => doctor::doctor(&cli, args).await,
         Commands::Status(ref args) => porcelain::status(&cli, args).await,
         Commands::Refresh(_) => porcelain::refresh(&cli).await,
+        Commands::Snapshot(ref args) => porcelain::snapshot(&cli, args).await,
     }
 }

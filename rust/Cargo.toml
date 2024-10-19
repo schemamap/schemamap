@@ -37,6 +37,7 @@ rustyline = "14.0.0"
 url = "2.5.2"
 lazy_static = "1.5.0"
 docker-compose-types = "0.14.0"
+git2 = "0.14.4"
 
 [target.'cfg(target_env = "musl")'.dependencies]
 openssl = { version = "0.10", features = ["vendored"], optional = true }

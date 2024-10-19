@@ -44,7 +44,6 @@ in {
       # use local schemamap
       # TODO: adopt public cachix to not rebuild all the time in CI
       package = pkgs.callPackage ./package.nix { version = "dev"; };
-      user = "schemamap_test";
     };
 
     # https://devenv.sh/reference/options/#servicespostgresenable
