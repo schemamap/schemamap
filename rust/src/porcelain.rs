@@ -130,6 +130,9 @@ pub struct SnapshotArgs {
         help = "The name of the database to snapshot, defaulting to the DB of the connection string"
     )]
     pub template_db_name: Option<String>,
+    #[arg(
+        help = "The name of the snapshot to create, defaults to DB name + current Git branch name"
+    )]
     pub snapshot_name: Option<String>,
 }
 
@@ -194,6 +197,62 @@ pub async fn snapshot(cli: &Cli, args: &SnapshotArgs) -> anyhow::Result<()> {
         .execute(
             "update snapshots set git_branch = $1, git_rev = $2 where db_name = $3",
             &[&git_stats.branch_name, &git_stats.revision, &new_db_name],
+        )
+        .await?;
+
+    Ok(())
+}
+
+#[derive(Parser, Debug, Default, Clone)]
+pub struct RestoreArgs {
+    #[arg(
+        long("to"),
+        help = "The name of the database to restore to, defaulting to the DB of the connection string"
+    )]
+    pub new_db_name: Option<String>,
+    #[arg(
+        help = "The name of the snapshot to restore from, defaults to DB name + current Git branch name"
+    )]
+    pub snapshot_name: Option<String>,
+}
+
+pub async fn restore(cli: &Cli, args: &RestoreArgs) -> anyhow::Result<()> {
+    let pgconfig = parsers::parse_pgconfig_from_cli(cli)?;
+
+    let mut dev_pgconfig = pgconfig.clone();
+    dev_pgconfig.dbname(SCHEMAMAP_DEV_DB);
+
+    let client = connect_from_config(&dev_pgconfig).await?;
+
+    let target_db_name = pgconfig.get_dbname().unwrap_or_else(|| "postgres");
+
+    let snapshot_name = args.snapshot_name.as_ref().map_or_else(
+        || {
+            current_git_stats()
+                .map(|stats| format!("{}_{}", target_db_name, stats.branch_name))
+                .unwrap_or_else(|_| "postgres".to_string())
+                .to_string()
+        },
+        |name| name.clone(),
+    );
+
+    let new_db_name = args
+        .new_db_name
+        .as_ref()
+        .map_or_else(|| target_db_name.to_string(), |name| name.clone());
+
+    log::info!("Dropping DB: {}", new_db_name);
+
+    client
+        .execute("select drop_database($1)", &[&new_db_name])
+        .await?;
+
+    log::info!("Restoring: {} from: {}", new_db_name, snapshot_name);
+
+    client
+        .execute(
+            "select restore_snapshot($1, $2)",
+            &[&snapshot_name, &new_db_name],
         )
         .await?;
 

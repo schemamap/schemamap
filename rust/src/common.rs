@@ -82,6 +82,8 @@ pub enum Commands {
     Refresh(porcelain::RefreshArgs),
     #[command(about = "Snapshot the current DB to a new snapshot")]
     Snapshot(porcelain::SnapshotArgs),
+    #[command(about = "Restore the current DB from a snapshot, destorying the current state")]
+    Restore(porcelain::RestoreArgs),
 }
 
 pub const SCHEMAMAP_DEV_DB: &str = "schemamap_dev";

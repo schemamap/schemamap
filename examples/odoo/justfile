@@ -44,6 +44,11 @@ schemamap-status:
 schemamap-doctor:
   schemamap doctor --dbname odoo_test
 
+schemamap-snapshot-restore:
+  schemamap snapshot --dbname odoo_test
+  dropdb odoo_test
+  schemamap restore --dbname odoo_test
+
 open:
   open http://127.0.0.1:8069
 
@@ -60,4 +65,4 @@ odoo-init:
     --data-urlencode "phone=" > /dev/null
 
 demo: down up docker-ps wait-til-ready odoo-init
-test: down up docker-ps wait-til-ready odoo-init schemamap-init schemamap-doctor schemamap-status schemamap-up
+test: down up docker-ps wait-til-ready odoo-init schemamap-init schemamap-doctor schemamap-status schemamap-snapshot-restore schemamap-up
