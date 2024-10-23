@@ -131,5 +131,5 @@ select
   count(*) filter (where is_external_reference) as external_reference_count,
   (select jsonb_agg(tenants order by tenant_id) from schemamap.list_tenants() as tenants) as tenants,
   (select jsonb_agg(mdes order by mde_name) from schemamap.list_mdes() as mdes) as master_data_entities,
-  (select jsonb_agg(concepts order by concept_name) from schemamap.list_concepts() as mdes) as concepts
+  (select jsonb_agg(concepts order by concept_name) from schemamap.list_concepts() as concepts) as concepts
 from schemamap.smo;

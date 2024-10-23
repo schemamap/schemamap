@@ -258,3 +258,28 @@ pub async fn restore(cli: &Cli, args: &RestoreArgs) -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[derive(Parser, Debug, Default, Clone)]
+pub struct ListArgs {}
+
+pub async fn list(cli: &Cli, _args: &ListArgs) -> anyhow::Result<()> {
+    let pgconfig = parsers::parse_pgconfig_from_cli(cli)?;
+
+    let mut dev_pgconfig = pgconfig.clone();
+    dev_pgconfig.dbname(SCHEMAMAP_DEV_DB);
+
+    let client = connect_from_config(&dev_pgconfig).await?;
+
+    let statement =
+        "select jsonb_pretty(jsonb_agg(snapshots order by created_at desc)) as snapshot_summary
+         from (select s.*,
+               pg_database_size(s.db_name) as db_size_bytes,
+               pg_size_pretty(pg_database_size(s.db_name)) as db_size_pretty
+    from snapshots s) snapshots";
+
+    let output = client.query_one(statement, &[]).await?;
+
+    println!("{}", output.get::<_, String>(0));
+
+    Ok(())
+}

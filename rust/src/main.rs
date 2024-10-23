@@ -58,5 +58,6 @@ async fn main() -> Result<()> {
         Commands::Refresh(_) => porcelain::refresh(&cli).await,
         Commands::Snapshot(ref args) => porcelain::snapshot(&cli, args).await,
         Commands::Restore(ref args) => porcelain::restore(&cli, args).await,
+        Commands::List(ref args) => porcelain::list(&cli, args).await,
     }
 }
