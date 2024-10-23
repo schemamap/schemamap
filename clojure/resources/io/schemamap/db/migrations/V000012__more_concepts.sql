@@ -104,12 +104,18 @@ select schemamap.define_concept('external_reference', $$
     );
 $$);
 
+-- tables that shouldn't be considered for data migrations
+select schemamap.define_concept('ignored_table', $$
+  select schemamap.is_schema_migration_table(smo)
+$$);
+
 create or replace view schemamap.status as
 select
   count(distinct schema_name) as schema_count,
   count(distinct (schema_name, table_name)) as table_count,
   count(*) as column_count,
   count(distinct (schema_name, table_name)) filter (where is_schema_migration_table) as schema_migration_table_count,
+  count(distinct (schema_name, table_name)) filter (where is_ignored_table) as ignored_table_count,
   count(*) filter (where is_pii) as pii_count,
   count(*) filter (where is_metadata) as metadata_count,
   count(*) filter (where is_primary_key) as primary_key_count,
