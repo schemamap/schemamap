@@ -36,8 +36,6 @@ in {
   # For stacktraces when things go wrong
   env.RUST_BACKTRACE = "1";
 
-  process.implementation = "process-compose";
-
   services = {
     schemamap = {
       enable = true;
