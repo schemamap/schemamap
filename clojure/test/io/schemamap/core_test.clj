@@ -36,19 +36,6 @@
                                        :password     "schemamap_test"
                                        :maximum-pool-size 5)
                                       (hikari/make-datasource))]
-      ;; NOTE: this is handled via devenv.nix integration, without Flyway dependency at all
-      #_(testing "SDK can be initialized, repeatedly"
-          (dotimes [nth-init 2]
-            (let [client
-                  (sut/init!
-                   {:datasource           sm-datasource
-                    :application-db-roles #{app-db-role}
-                    :i18n                 (nth [(io/file "../fixtures/adventureworks_i18n.json")
-                                                "{\"test\": 42}"]
-                                               nth-init)})]
-              (try
-                (is (= {} client))
-                (finally (sut/close! client))))))
       (testing "after SDK initialization the app-db-role can use the DB interface via functions"
         (with-open [conn (jdbc/get-connection app-datasource)]
           (jdbc/execute! conn ["select schemamap.update_schema_metadata_overview();"])
