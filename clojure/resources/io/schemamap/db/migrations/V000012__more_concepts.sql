@@ -1,5 +1,26 @@
 drop view if exists schemamap.status;
 
+create or replace function schemamap.redefine_smo_view_with_concepts()
+returns void as $$
+declare
+  _concept_name text;
+  _concept_columns text := '';
+begin
+  for _concept_name in select concept_name from schemamap.list_concepts() order by 1
+  loop
+    _concept_columns := _concept_columns || format(', schemamap.is_%I(smo) as is_%I', _concept_name, _concept_name);
+  end loop;
+
+  -- NOTE: do not depend on this view with other objects, use the schemamap.schema_metadata_overview matview instead.
+  drop view if exists schemamap.columns cascade;
+
+  execute format('create or replace view schemamap.columns as
+                  select smo.* %s
+                  from schemamap.schema_metadata_overview smo',
+    _concept_columns);
+end;
+$$ language plpgsql;
+
 select schemamap.define_concept('primary_key', $$
   select exists (
     select 1
@@ -130,6 +151,5 @@ select
   count(*) filter (where is_self_reference) as self_reference_count,
   count(*) filter (where is_external_reference) as external_reference_count,
   (select jsonb_agg(tenants order by tenant_id) from schemamap.list_tenants() as tenants) as tenants,
-  (select jsonb_agg(mdes order by mde_name) from schemamap.list_mdes() as mdes) as master_data_entities,
-  (select jsonb_agg(concepts order by concept_name) from schemamap.list_concepts() as concepts) as concepts
-from schemamap.smo;
+  (select jsonb_agg(mdes order by mde_name) from schemamap.list_mdes() as mdes) as master_data_entities
+from schemamap.columns;
