@@ -18,6 +18,15 @@ pub struct Cli {
     #[arg(short('v'), long, action = clap::ArgAction::Count, help = "Make the operation more talkative", global = true)]
     pub verbose: u8,
 
+    #[arg(short('q'),
+    long,
+    action = clap::ArgAction::SetTrue,
+     default_missing_value = "true",
+     default_value = "false",
+     help = "Only output to stdout, without logging",
+     global = true)]
+    pub quiet: Option<bool>,
+
     #[arg(
         short,
         long,
@@ -71,4 +80,13 @@ pub enum Commands {
     Status(porcelain::StatusArgs),
     #[command(about = "Refresh the SMO materialized view to reflect the current DB state")]
     Refresh(porcelain::RefreshArgs),
+    // `schemamap_dev` DB section, snapshot/restore
+    #[command(about = "Snapshot the current DB to a new snapshot")]
+    Snapshot(porcelain::SnapshotArgs),
+    #[command(about = "Restore the current DB from a snapshot, destorying the current state")]
+    Restore(porcelain::RestoreArgs),
+    #[command(about = "List snapshots")]
+    List(porcelain::ListArgs),
 }
+
+pub const SCHEMAMAP_DEV_DB: &str = "schemamap_dev";

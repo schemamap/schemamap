@@ -1,4 +1,4 @@
-use crate::common::Cli;
+use crate::common::{Cli, SCHEMAMAP_DEV_DB};
 use anyhow::Result;
 use clap::Args;
 use dialoguer::theme::ColorfulTheme;
@@ -161,16 +161,15 @@ pub async fn install_dev_extensions(pgconfig: &Config, client: &Option<Client>) 
     // Have to submit separately otherwise the commands run in a transaction context
     // which is not allowed for CREATE DATABASE.
 
-    let dbname = "schemamap_dev";
-    log::info!("Creating \"{}\" DB", dbname);
-    let create_db_sql = format!("CREATE DATABASE {};", dbname);
+    log::info!("Creating \"{}\" DB", SCHEMAMAP_DEV_DB);
+    let create_db_sql = format!("CREATE DATABASE {};", SCHEMAMAP_DEV_DB);
     if let Some(c) = client {
         if let Err(e) = c.execute(&create_db_sql, &[]).await {
-            log::warn!("Failed to create \"{}\" database: {}", dbname, e);
+            log::warn!("Failed to create \"{}\" database: {}", SCHEMAMAP_DEV_DB, e);
             return Ok(());
         } else {
             let mut dev_pgconfig = pgconfig.clone();
-            let dev_pgconfig_dbname = dev_pgconfig.dbname(&dbname);
+            let dev_pgconfig_dbname = dev_pgconfig.dbname(&SCHEMAMAP_DEV_DB);
 
             let (schemamp_dev_c, connection) = dev_pgconfig_dbname.connect(NoTls).await?;
 
@@ -183,7 +182,7 @@ pub async fn install_dev_extensions(pgconfig: &Config, client: &Option<Client>) 
             if let Err(e) = schemamp_dev_c.batch_execute(SCHEMAMAP_DEV_SQL).await {
                 log::warn!("Failed to install dev extensions: {}", e);
             } else {
-                log::info!("Installed dev extensions to \"{}\" DB", dbname);
+                log::info!("Installed dev extensions to \"{}\" DB", SCHEMAMAP_DEV_DB);
             }
         }
     } else {
@@ -252,15 +251,25 @@ pub async fn init(cli: &Cli, args: &InitArgs) -> Result<()> {
     grant_schemamap_usage(&pgconfig, &client).await?;
 
     log::info!("Schemamap.io Postgres SDK installed successfully");
+    let dev_db_exists: bool = if let Some(c) = &client {
+        c.query_one(
+            "SELECT exists(select 1 from pg_database where datname = $1)",
+            &[&SCHEMAMAP_DEV_DB],
+        )
+        .await?
+        .get::<_, bool>(0)
+    } else {
+        false
+    };
 
     let install_dev;
-    if interactive && args.dev.is_none() && !dry_run {
+    if !dev_db_exists && interactive && args.dev.is_none() && !dry_run {
         install_dev = prompt_for_dev_installation();
     } else {
         install_dev = args.dev.unwrap_or(false);
     }
 
-    if install_dev {
+    if !dev_db_exists && install_dev {
         install_dev_extensions(&pgconfig, &client).await?;
     }
 

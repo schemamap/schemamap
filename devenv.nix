@@ -36,15 +36,12 @@ in {
   # For stacktraces when things go wrong
   env.RUST_BACKTRACE = "1";
 
-  process.implementation = "process-compose";
-
   services = {
     schemamap = {
       enable = true;
       # use local schemamap
       # TODO: adopt public cachix to not rebuild all the time in CI
       package = pkgs.callPackage ./package.nix { version = "dev"; };
-      user = "schemamap_test";
     };
 
     # https://devenv.sh/reference/options/#servicespostgresenable
@@ -97,6 +94,8 @@ in {
         depends_on.schemamap-init.condition = "process_completed";
       };
     };
+
+    schemamap-init.process-compose.depends_on.seed-postgres.condition = "process_completed";
 
     # Needed so postgres can be restarted until the below issue is fixed:
     # https://github.com/F1bonacc1/process-compose/issues/200

@@ -36,21 +36,14 @@
                                        :password     "schemamap_test"
                                        :maximum-pool-size 5)
                                       (hikari/make-datasource))]
-      ;; NOTE: this is handled via devenv.nix integration, without Flyway dependency at all
-      #_(testing "SDK can be initialized, repeatedly"
-          (dotimes [nth-init 2]
-            (let [client
-                  (sut/init!
-                   {:datasource           sm-datasource
-                    :application-db-roles #{app-db-role}
-                    :i18n                 (nth [(io/file "../fixtures/adventureworks_i18n.json")
-                                                "{\"test\": 42}"]
-                                               nth-init)})]
-              (try
-                (is (= {} client))
-                (finally (sut/close! client))))))
       (testing "after SDK initialization the app-db-role can use the DB interface via functions"
         (with-open [conn (jdbc/get-connection app-datasource)]
+          (doseq [schema ["sa" "sales"
+                          "pu" "purchasing"
+                          "pe" "person"
+                          "hr" "humanresources"
+                          "pr" "production"]]
+            (jdbc/execute! conn [(format "grant usage on schema %s to schemamap_schema_read" schema)]))
           (jdbc/execute! conn ["select schemamap.update_schema_metadata_overview();"])
           (testing "i18n value can be fetched"
             (jdbc/execute! conn ["select schemamap.update_i18n(?::jsonb)" (sut/read-i18n-string! "{\"test\": 42}")])
@@ -166,6 +159,52 @@
                       where indexes is not null and constraints is not null
                       order by jsonb_array_length(constraints) desc nulls last
                       limit 1"]
+                  {:builder-fn jdbc.rs/as-unqualified-maps}))))
+          (testing "can define new concepts, idempotently"
+            (dotimes [_ 2]
+              (is (= {:define_concept "hasura_enum_table"}
+                     (jdbc/execute-one!
+                      conn
+                      ["select schemamap.define_concept('hasura_enum_table', $$
+                        select smo.column_name = 'value' and smo.data_type = 'text' and schemamap.is_natural_key(smo)
+                      $$)"]
+                      {:builder-fn jdbc.rs/as-unqualified-maps})))))
+          (testing "can query them automatically from auto-adjusted schemamap.columns view"
+            (is (= {:count 0}
+                   (jdbc/execute-one!
+                    conn
+                    ["select count(1) from schemamap.columns where is_hasura_enum_table"]
+                    {:builder-fn jdbc.rs/as-unqualified-maps}))))
+          (testing "can query the status view"
+            (is (=
+                 {:generated_count 0,
+                  :exclusion_constrained_count 0,
+                  :check_constrained_count 101,
+                  :pii_count 108,
+                  :schema_count 10,
+                  :natural_key_count 61,
+                  :external_reference_count 296,
+                  :surrogate_key_count 38,
+                  :master_data_entities nil,
+                  :table_count 157,
+                  :schema_migration_table_count 0,
+                  :ignored_table_count 0,
+                  :unique_key_count 5,
+                  :indexed_count 99,
+                  :primary_key_count 99,
+                  :metadata_count 0,
+                  :tenants
+                  [{:tenant_locale "en_US",
+                    :tenant_data nil,
+                    :tenant_short_name "test_tenant",
+                    :tenant_display_name "Test Tenant",
+                    :tenant_id "1"}],
+                  :self_reference_count 0,
+                  :foreign_key_count 91,
+                  :column_count 1236}
+                 (jdbc/execute-one!
+                  conn
+                  ["select * from schemamap.status"]
                   {:builder-fn jdbc.rs/as-unqualified-maps}))))
           (testing "asking what-if questions by updating schema in transactions"
               ;; baseline: how many columns do we know about per schema?

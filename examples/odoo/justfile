@@ -13,6 +13,9 @@ psql-docker:
 psql:
   PGPASSWORD=myodoo psql -h 127.0.0.1 -p 8543 -U odoo odoo_test
 
+psql-postgres:
+  PGPASSWORD=myodoo psql -h 127.0.0.1 -p 8543 -U odoo postgres
+
 psql-schemamap-dev:
   PGPASSWORD=myodoo psql -h 127.0.0.1 -p 8543 -U odoo schemamap_dev
 
@@ -41,6 +44,11 @@ schemamap-status:
 schemamap-doctor:
   schemamap doctor --dbname odoo_test
 
+schemamap-snapshot-restore:
+  schemamap snapshot --dbname odoo_test
+  dropdb odoo_test
+  schemamap restore --dbname odoo_test
+
 open:
   open http://127.0.0.1:8069
 
@@ -56,4 +64,5 @@ odoo-init:
     --data-urlencode "demo=True" \
     --data-urlencode "phone=" > /dev/null
 
-test: down up docker-ps wait-til-ready odoo-init schemamap-init schemamap-doctor schemamap-status schemamap-up
+demo: down up docker-ps wait-til-ready odoo-init
+test: down up docker-ps wait-til-ready odoo-init schemamap-init schemamap-doctor schemamap-status schemamap-snapshot-restore schemamap-up

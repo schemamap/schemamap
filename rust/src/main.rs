@@ -38,13 +38,15 @@ fn configure_logging(debug: bool) {
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
+    // In case of dry-run, we don't want to log at all, to not interfere with STDOUT/STDERR
     let dry_run = match cli.command {
         Commands::Init(ref args) => args.dry_run.unwrap_or(false),
         _ => false,
     };
 
-    // In case of dry-run, we don't want to log at all, to not interfere with STDOUT/STDERR
-    if !dry_run {
+    let quiet = cli.quiet.unwrap_or(false);
+
+    if !quiet && !dry_run {
         configure_logging(cli.verbose > 0);
     }
 
@@ -54,5 +56,8 @@ async fn main() -> Result<()> {
         Commands::Doctor(ref args) => doctor::doctor(&cli, args).await,
         Commands::Status(ref args) => porcelain::status(&cli, args).await,
         Commands::Refresh(_) => porcelain::refresh(&cli).await,
+        Commands::Snapshot(ref args) => porcelain::snapshot(&cli, args).await,
+        Commands::Restore(ref args) => porcelain::restore(&cli, args).await,
+        Commands::List(ref args) => porcelain::list(&cli, args).await,
     }
 }
