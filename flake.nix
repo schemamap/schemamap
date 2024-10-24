@@ -6,7 +6,7 @@
 
   outputs = { self, nixpkgs }:
     let
-      version = "0.4.2";
+      version = "0.4.3";
       supportedSystems = [ "x86_64-linux" "i686-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
       forAllSystems = f: builtins.listToAttrs (map (name: { inherit name; value = f name; }) supportedSystems);
       mkPackage = pkgs: import ./package.nix { inherit pkgs version; };

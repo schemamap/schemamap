@@ -1258,3 +1258,6 @@ select
   (select jsonb_agg(tenants order by tenant_id) from schemamap.list_tenants() as tenants) as tenants,
   (select jsonb_agg(mdes order by mde_name) from schemamap.list_mdes() as mdes) as master_data_entities
 from schemamap.columns;
+
+-- V000013__drop_smo_view.sql
+drop view if exists schemamap.smo cascade;
