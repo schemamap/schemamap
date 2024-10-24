@@ -110,7 +110,10 @@ pub async fn status(cli: &Cli, args: &StatusArgs) -> anyhow::Result<()> {
     }
     .await?;
 
-    println!("{}", output.get::<_, String>(0));
+    println!(
+        "{}",
+        output.try_get::<_, String>(0).unwrap_or("[]".to_string())
+    );
 
     Ok(())
 }
@@ -279,7 +282,10 @@ pub async fn list(cli: &Cli, _args: &ListArgs) -> anyhow::Result<()> {
 
     let output = client.query_one(statement, &[]).await?;
 
-    println!("{}", output.get::<_, String>(0));
+    println!(
+        "{}",
+        output.try_get::<_, String>(0).unwrap_or("[]".to_string())
+    );
 
     Ok(())
 }
