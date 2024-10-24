@@ -4,7 +4,7 @@
             [deps-deploy.deps-deploy :as dd]))
 
 (def lib 'io.schemamap/schemamap-clj)
-(def version "0.4.1")
+(def version "0.4.2")
 (def class-dir "target/classes")
 
 (defn test "Run all the tests." [opts]

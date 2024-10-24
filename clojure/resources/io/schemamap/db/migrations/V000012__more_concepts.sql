@@ -1,25 +1,34 @@
-drop view if exists schemamap.status;
-
 create or replace function schemamap.redefine_smo_view_with_concepts()
 returns void as $$
 declare
   _concept_name text;
   _concept_columns text := '';
+  _status_view_sql text := '';
 begin
   for _concept_name in select concept_name from schemamap.list_concepts() order by 1
   loop
     _concept_columns := _concept_columns || format(', schemamap.is_%I(smo) as is_%I', _concept_name, _concept_name);
   end loop;
 
+
+  select pg_get_viewdef('schemamap.status', true) into _status_view_sql;
+  drop view if exists schemamap.status;
+
   -- NOTE: do not depend on this view with other objects, use the schemamap.schema_metadata_overview matview instead.
-  drop view if exists schemamap.columns cascade;
+  drop view if exists schemamap.columns;
+
 
   execute format('create or replace view schemamap.columns as
                   select smo.* %s
                   from schemamap.schema_metadata_overview smo',
     _concept_columns);
+
+  execute format ('create or replace view schemamap.status as %s', _status_view_sql);
+  grant select on schemamap.columns to public;
+  grant select on schemamap.status to public;
+
 end;
-$$ language plpgsql;
+$$ language plpgsql volatile security definer;
 
 select schemamap.define_concept('primary_key', $$
   select exists (
@@ -130,6 +139,13 @@ select schemamap.define_concept('ignored_table', $$
   select schemamap.is_schema_migration_table(smo)
 $$);
 
+create or replace function schemamap.refresh()
+returns void as $$
+begin
+  perform schemamap.update_schema_metadata_overview(concurrently := false);
+end; $$ language plpgsql volatile;
+
+drop view if exists schemamap.status;
 create or replace view schemamap.status as
 select
   count(distinct schema_name) as schema_count,

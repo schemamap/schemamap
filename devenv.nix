@@ -95,6 +95,8 @@ in {
       };
     };
 
+    schemamap-init.process-compose.depends_on.seed-postgres.condition = "process_completed";
+
     # Needed so postgres can be restarted until the below issue is fixed:
     # https://github.com/F1bonacc1/process-compose/issues/200
     sleepy-keepalive.exec = "sleep infinity";
