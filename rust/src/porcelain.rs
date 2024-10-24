@@ -22,7 +22,7 @@ pub struct StatusArgs {
     #[arg(
       short('a'),
       long,
-      help = "Return all schemamap.smo records as a JSON array.",
+      help = "Return all schemamap.columns records as a JSON array.",
       default_missing_value = "true",
       default_value = "false",
 
@@ -98,7 +98,7 @@ pub async fn status(cli: &Cli, args: &StatusArgs) -> anyhow::Result<()> {
     let output = if all {
         client.query_one(
             "select jsonb_pretty(jsonb_agg(smo order by schema_name, table_name, column_name)) as smo_text
-                from schemamap.smo as smo",
+                from schemamap.columns as smo",
             &[],
         )
     } else {
