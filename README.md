@@ -1,99 +1,90 @@
-# Schemamap.io
+<div align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/images/schemamap_logo_light.png">
+  <img height="150" src=".github/images/schemamap_logo_dark.png">
+</picture>
+</div>
+<p align="center">
+Instant batch data import for Postgres
+</p>
+<p align="center">
+  <a href="https://schemamap.io/demo"><img src="https://img.shields.io/badge/Try the Demo!-blue?logoColor=purple"/></a>
+  <a href="mailto:krisz@schemamap.io"><img src="https://img.shields.io/badge/Email%20the%20Founder-purple" /></a>
+  <a href="https://github.com/schemamap/schemamap/blob/main/LICENSE"><img src="https://img.shields.io/github/license/schemamap/schemamap"/></a>
+  <a href="https://github.com/sourcebot-dev/sourcebot/actions/workflows/ghcr-publish.yml"><img src="https://img.shields.io/github/actions/workflow/status/schemamap/schemamap/push-tag.yml"/><a>
+  <a href="https://github.com/schemamap/schemamap/stargazers"><img src="https://img.shields.io/github/stars/schemamap/schemamap" /></a>
+</p>
 
-This repository contains the open-source SQL schema and SDKs of [Schemamap.io](https://schemamap.io).
+<p align="center">
+    <a href="https://discord.schemamap.io"><img src="https://dcbadge.limes.pink/api/server/https://discord.gg/P3UzxNusbA?style=flat"/></a>
+</p>
 
-## When to use Schemamap.io
+## Schemamap is a data ingestion platform for your Postgres-based product
 
-Comparison to similar tools:
+- Import correct customer data into hundreds of production tables in seconds, not weeks
+- Reduce Time To Value by 50% for long onboarding flows, reducing churn
+- Integrations built for your product automatically, maintained as your app grows
+- Get automatic multi-tenant dashboards for data health and customer success, inferred from your DB
+- Test code against anonymized Production data in lower-level environments
+- Easily reproduce bugs locally by subsetted Postgres -> Postgres syncing
+- Merge data between Postgres DB branches on platforms like Supabase and Neon
+- Eliminate tedious one-by-one configuring of master data after go-lives, sync data from Pre-Prod to Prod
+- Solve GDPR, SOC2, DPDP, FERPA, HIPAA compliance with database-level controls and eliminating privacy risk
+- Schema Metadata as Data allows DB -> Backend -> Frontend sharing of constraints/validation logic for consistent UX
+- Create DB snapshots locally for easy switching between Git branches while keeping data intact, syncing data between snapshots
 
-| Need | Solutions |
-|--------------------|-------------------------------------------------------|
-| REST API           | [Postgrest](https://postgrest.org/en/stable/)         |
-| GraphQL API        | [Hasura](https://hasura.io/), [Supabase](https://github.com/supabase/pg_graphql) |
-| Table-based API    | :tada: **Schemamap.io** :tada:                            |
+## Get started for free
 
-## Overview
+Install the Postgres-level SDK into your local database:
 
-Schemamap.io provides a common SQL and backend interface for your Postgres-based multi-tenant application, regardless of your framework.
+```
+brew install schemamap/tap/schemamap
+export DATABASE_URI="postgres://postgres:postgres@localhost:5432/postgres"
+schemamap init
+```
 
-Instead of maintaining CSV/Excel imports and exports by hand, generate them using industry-standard patterns via a rule engine.
+## Usage
 
-As your schema evolves (new columns/tables) so do your table-based interfaces, along with import/export SQL scripts.
+See your DB status immedieatly:
 
-## Formats supported
+```
+schemamap status
+```
 
-- CSV
-- Google Sheets
-- Excel (`.xls` and `.xlsx`) (Work in progress)
-- Salesforce API (Work in progress)
+See individual column metadata as JSON:
 
-## Features
+```
+schemamap status -a | jq '.'
+```
 
-- **Schema as a View**: To support analysis, schema metadata is collected into a column-wise materialized view.
-  - Query and analyze your schema with simple SQL queries, get holistic view of anomalies/exceptions to the patterns in your DB.
-  - Great for onboarding new developers without needing an ER diagram
-  - Schedule refresh at your convenience by just calling a SQL function:
-    - periodically, using [pg_cron](https://github.com/citusdata/pg_cron)
-    - after SQL migrations
-    - from application code
-- **Security**: Robust handling for application Postgres DB roles / RLS
-  - [Principle of least privilege](https://en.wikipedia.org/wiki/Principle_of_least_privilege)
-  - Multiple roles with incrementally more privileges
-    - Schema read access
-    - Read-only access (to the minimum subset of tables, for exporting data)
-    - Write access (to the minimum subset of tables, to import data without writing application layer code)
-  - Give access as much or as little, given your security & threat model.
-  - Support tenant-scoped roles that guarantee safe access via row-level-security
-- **TCP Port-Forwarding**: Connect your local/Docker Postgres securely for a local-first developer experience.
-  - No need to setup firewall rules/Ngrok/bastion hosts to try out the feature-set.
-  - Use with local mock/seed data or with an empty DB.
-  - Get setup/usage help interactively from the app, while coding along in your favorite SQL client/psql.
+See SDK integration improvements, for multi-tenancy:
 
-## SDKs Supported
+```
+schemamap doctor
+```
 
-Integrate `schemamap` seamlessly with language-specific SDKs.
+Connect to the Schemamap.io Cloud to start receiving batch data migrations:
 
-Currently supported:
+```
+schemamap up
+```
 
-- **[CLI (Rust)](./rust)**
-- **[Clojure (library)](./clojure)**:
-[![Clojars Project](https://img.shields.io/clojars/v/io.schemamap/schemamap-clj.svg)](https://clojars.org/io.schemamap/schemamap-clj)
+## Philosophy
 
-_Watch out for more languages coming soon! Have a request? [Open an issue](https://github.com/schemamap/schemamap/issues/new)._
+Our mission is to increase the number of successful Postgres-based products in the world.
+To do that, we build data import tooling that help you get the correct data you need into your product.
 
-## Developing
+Postgres has one of the strongest Data Definition Language in the RDBMS world, paralleling the power of dependent type systems.
+Our belief is that this rich metadata has been underused by existing tooling and developers.
 
-### First-time setup
-1. Install direnv and hook into your shell: https://direnv.net/#basic-installation
-2. Install the Nix package manager: https://github.com/DeterminateSystems/nix-installer#readme
-3. Run `direnv allow` (will prompt you to install https://devenv.sh/getting-started/#2-install-cachix, from Step 2.)
-4. To make sure the LFS files (db dumps) are present, run: `git lfs pull`
+Instant API tools like PostgREST and Hasura were the correct first steps to allow easy data ingestion, one record at a time.
+They fall short though on large-scale data operations, that span more than a handful of tables or thousands of records.
+This requires a fundamentally different approach, which is asynchronous, requires careful handling of networking, I/O and most importantly data security.
 
-### Day-to-day operations
-1. `process-compose` to bring up the development environment services
-2. `ci-test` to run the integration test suite locally (shut down `process-compose` beforehand)
-3. `devenv info` to see what packages and scripts are available
+When integrating a data source, manually specifying transformation & mapping decisions on thousands of columns is unfeasible and tedious.
 
-## Feedback and Contributions
-We'd love to hear from you! Whether it's a bug report, feature request, or general feedback - feel free to [raise an issue](https://github.com/schemamap/schemamap/issues/new).
+Our claim is that by constraining our Postgres databases more (therefore defining what is "correct") we can use logic programming and constraint-solving methods to automatically ingest data from any source.
 
-## Security Policy
+This unlocks a new level of productivity that allows small teams to build even more ambitious applications than ever before.
 
-Security is at the core Schemamap.io.
-
-If you discover any issue regarding security, please disclose the information responsibly by sending an email to security@schemamap.io and not by creating a GitHub issue.
-
-We'll get back to you ASAP and work with you to confirm and plan a fix for the issue.
-
-Please note that we do not currently offer a bug bounty program.
-
-## Acknowledgements
-
-This software uses the following third-party libraries:
-
-- [Rathole](https://github.com/rapiz1/rathole) licensed under Apache-2.0. See [LICENSES/rathole.txt](LICENSES/rathole.txt).
-
-## License
-Copyright © 2023-2024 Schemamap.io Kft.
-
-This project is distributed under the MIT License. For more details, refer to the [LICENSE](./LICENSE) file.
+Schemamap gives you every tool you need to understand your product, develop and test it confidently, and release changes without being slowed down by domain complexity.
