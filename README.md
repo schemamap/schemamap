@@ -23,11 +23,11 @@ Instant batch data import for Postgres
 
 ### Customer onboarding & success
 
-- Import correct customer data into hundreds of production tables in seconds, not weeks
+- Import correct customer data into hundreds of **Production DB** tables in _seconds_, not weeks
 - Reduce Time To Value by 50% for long onboarding flows, reducing churn
-- Integrations built for your product automatically, maintained as your app grows
-- Get automatic multi-tenant dashboards for data health and customer success, inferred from your DB
-- Eliminate tedious one-by-one configuring of master data after go-lives, sync data from Pre-Prod to Prod
+- Integrations built for your product automatically, maintained as your application evolves
+- Automatic multi-tenant dashboards for customer data health and onboarding success, inferred from your DB
+- Eliminate tedious one-by-one configuring of master data after go-lives, sync data safely from Pre-Prod to Prod
 
 ### Developer productivity
 
