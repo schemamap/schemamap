@@ -21,17 +21,25 @@ Instant batch data import for Postgres
 
 ## Schemamap is a data ingestion platform for your Postgres-based product
 
+### Customer onboarding & success
+
 - Import correct customer data into hundreds of production tables in seconds, not weeks
 - Reduce Time To Value by 50% for long onboarding flows, reducing churn
 - Integrations built for your product automatically, maintained as your app grows
 - Get automatic multi-tenant dashboards for data health and customer success, inferred from your DB
+- Eliminate tedious one-by-one configuring of master data after go-lives, sync data from Pre-Prod to Prod
+
+### Developer productivity
+
 - Test code against anonymized Production data in lower-level environments
 - Easily reproduce bugs locally by subsetted Postgres -> Postgres syncing
 - Merge data between Postgres DB branches on platforms like Supabase and Neon
-- Eliminate tedious one-by-one configuring of master data after go-lives, sync data from Pre-Prod to Prod
+- Create DB snapshots locally for easy switching between Git branches while keeping data intact, syncing data between snapshots
+
+### Data governance
+
 - Solve GDPR, SOC2, DPDP, FERPA, HIPAA compliance with database-level controls and eliminating privacy risk
 - Schema Metadata as Data allows DB -> Backend -> Frontend sharing of constraints/validation logic for consistent UX
-- Create DB snapshots locally for easy switching between Git branches while keeping data intact, syncing data between snapshots
 
 ## Get started for free
 
