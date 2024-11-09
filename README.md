@@ -47,7 +47,7 @@ Install the Postgres-level SDK into your local database:
 
 ```
 brew install schemamap/tap/schemamap
-export DATABASE_URI="postgres://postgres:postgres@localhost:5432/postgres"
+export DATABASE_URL="postgres://postgres:postgres@localhost:5432/postgres"
 schemamap init
 ```
 
